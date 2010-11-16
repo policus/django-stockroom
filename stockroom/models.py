@@ -10,6 +10,8 @@ except ImportError:
 
 from datetime import datetime
 
+from managers import CategoryChildrenManager, ActiveInventoryManager
+
 # Set default values
     
 if settings.IMAGE_GALLERY_LIMIT:
@@ -56,8 +58,8 @@ class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
     name = models.CharField(max_length=120)
     slug = models.SlugField(blank=True, unique=True)
-    parent = models.ForeignKey('self', blank=True, null=True)
-
+    parent = models.ForeignKey('self', blank=True, null=True, related_name='children')
+    
     class Meta:
         verbose_name = 'category'
         verbose_name_plural = 'categories'
@@ -164,7 +166,7 @@ class Measurement(models.Model):
     unit = models.ForeignKey('MeasurementUnit')
     
     def __unicode__(self):
-        return _('%s%s' % (self.measurement, self.unit))
+        return _('%s - %s' % (self.unit, self.measurement))
 
 
 class Color(models.Model):
@@ -179,7 +181,7 @@ class Color(models.Model):
     
 
 class StockItem(models.Model):
-    product = models.ForeignKey('Product')
+    product = models.ForeignKey('Product', related_name='stock')
     measurement = models.ForeignKey('Measurement', blank=True, null=True)
     color = models.ForeignKey('Color', blank=True, null=True)
     package_count = models.IntegerField(default=1)
@@ -207,7 +209,7 @@ class Price(models.Model):
         ordering = ['-created_on']
     
     def __unicode__(self):
-        return _("Pricing for %s of %s" % (self.stock_item.meas, self.stock_item.product.title))
+        return _("Pricing for %s of %s" % (self.stock_item.measurement, self.stock_item.product.title))
 
 
 class Inventory(models.Model):
@@ -216,13 +218,14 @@ class Inventory(models.Model):
     quantity = models.IntegerField(default=0)
     disable_sale_at = models.IntegerField(default=0, blank=True, null=True, help_text='Stockroom will stop the item from being sold once this quantity is reached (will accept negative numbers). Leave blank to disable')
     order_throttle = models.IntegerField(blank=True, null=True, help_text='The maximum amount of this item that can be in an individaul order')
+    active = ActiveInventoryManager()
     
     class Meta:
         verbose_name_plural = 'inventory'
     
     def __unicode__(self):
         return _("%s" % (self.stock_item,))
-
+    
 
 class Cart(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
@@ -234,7 +237,7 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey('Cart')
+    cart = models.ForeignKey('Cart', related_name='cart_items')
     stock_item = models.ForeignKey('StockItem')
     quantity = models.PositiveIntegerField(default=1)
     

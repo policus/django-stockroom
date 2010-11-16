@@ -21,27 +21,27 @@ class Cart(object):
         self.cart = cart
         
     def __iter__(self):
-        for item in self.cart.item_set.all():
+        for item in self.cart.cart_items.all():
             yield item
-    
+
     def new(self, request):
         cart = CartModel()
         cart.save()
         request.session[CART_ID] = cart.id
         return cart
     
-    def add(self, product, unit_price, quantity=1):
+    def add(self, stock_item, unit_price, quantity=1):
         try:
-            cart_item = CartItem.objects.get(cart=self.cart, product=product)
-        except models.CartItem.DoesNotExist:
-            cart_item = models.CartItem()
+            cart_item = CartItem.objects.get(cart=self.cart, stock_item=stock_item)
+            cart_item.quantity = quantity
+            cart_item.save()
+        except CartItem.DoesNotExist:
+            cart_item = CartItem()
             cart_item.cart = self.cart
-            cart_item.product = product
+            cart_item.stock_item = stock_item
             cart_item.unit_price = unit_price
             cart_item.quantity = quantity
             cart_item.save()
-        else:
-            raise ItemAlreadyExists
     
     def remove(self, item):
         try:
@@ -51,19 +51,19 @@ class Cart(object):
         else:
             cart_item.delete()
     
-    def update(self, product, unit_price, quantity):
+    def update(self, stock_item, unit_price, quantity):
         try:
-            cart_item = models.CartItem.objects.get(cart=self.cart, product=product)
+            cart_item = CartItem.objects.get(cart=self.cart, stock_item=stock_item)
             cart_item.cart = self.cart
-            cart_item.product = product
+            cart_item.stock_item = stock_item
             cart_item.unit_price = unit_price
             cart_item.quantity = quantity
             cart_item.save(force_update=True)
-        except models.CartItem.DoesNotExist:
+        except CartItem.DoesNotExist:
             raise ItemDoesNotExist
     
     def clear(self):
-        for cart_item in self.cart.item_set.all():
+        for cart_item in self.cart.cart_items.all():
             cart_item.delete()
     
     def get_quantity(self, product):
@@ -91,3 +91,5 @@ class Cart(object):
         self.cart.save()
         return True
     
+    def summary(self):
+        return self.cart

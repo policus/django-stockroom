@@ -81,7 +81,6 @@ TEMPLATE_CONTEXT_PROCESORS = (
     "django.core.context_processors.i18n",
     "django.contrib.staticfiles.context_processors.staticfiles",
     "django.contrib.messages.context_processors.messages",
-    'example_project.apps.stockroom.context_processors.cart',
 )
 
 INSTALLED_APPS = (
@@ -95,7 +94,7 @@ INSTALLED_APPS = (
     'taggit',
     'taggit_suggest',
     'debug_toolbar',
-    'tastypie',
+    'piston',
     'example_project.apps.stockroom',
 )
 
@@ -114,3 +113,9 @@ DEBUG_TOOLBAR_PANELS = (
 
 STOCKROOM_CATEGORY_SEPARATOR = '/'
 IMAGE_GALLERY_LIMIT = 10
+
+import logging
+logging.basicConfig(
+    level = logging.DEBUG,
+    format = '%(asctime)s %(levelname)s %(message)s',
+)

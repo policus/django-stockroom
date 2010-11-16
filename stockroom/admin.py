@@ -83,6 +83,9 @@ class ProductImageAdmin(admin.ModelAdmin):
     class Meta:
         model = ProductImage
 
+class PriceAdmin(admin.ModelAdmin):
+    class Meta:
+        model = Price
 
 class CartAdmin(admin.ModelAdmin):
     class Meta:
@@ -107,3 +110,4 @@ admin.site.register(ProductGallery, ProductGalleryAdmin)
 admin.site.register(ProductImage, ProductImageAdmin)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
+admin.site.register(Price, PriceAdmin)

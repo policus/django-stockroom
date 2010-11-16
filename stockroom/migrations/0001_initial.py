@@ -8,10 +8,143 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
+        # Adding model 'Manufacturer'
+        db.create_table('stockroom_manufacturer', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=120)),
+            ('website', self.gf('django.db.models.fields.URLField')(max_length=200, null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['Manufacturer'])
+
+        # Adding model 'Brand'
+        db.create_table('stockroom_brand', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=120)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('manufacturer', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Manufacturer'])),
+            ('logo', self.gf('django.db.models.fields.files.ImageField')(max_length=100, null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['Brand'])
+
+        # Adding model 'Product'
+        db.create_table('stockroom_product', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.ProductCategory'], null=True, blank=True)),
+            ('brand', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Brand'])),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=120)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('sku', self.gf('django.db.models.fields.CharField')(max_length=30, null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['Product'])
+
+        # Adding model 'ProductCategory'
+        db.create_table('stockroom_productcategory', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('active', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=120)),
+            ('slug', self.gf('django.db.models.fields.SlugField')(db_index=True, unique=True, max_length=50, blank=True)),
+            ('parent', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='children', null=True, to=orm['stockroom.ProductCategory'])),
+        ))
+        db.send_create_signal('stockroom', ['ProductCategory'])
+
+        # Adding model 'ProductRelationship'
+        db.create_table('stockroom_productrelationship', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('from_product', self.gf('django.db.models.fields.related.ForeignKey')(related_name='from_product', to=orm['stockroom.Product'])),
+            ('to_product', self.gf('django.db.models.fields.related.ForeignKey')(related_name='to_product', to=orm['stockroom.Product'])),
+            ('description', self.gf('django.db.models.fields.CharField')(max_length=140)),
+        ))
+        db.send_create_signal('stockroom', ['ProductRelationship'])
+
+        # Adding model 'ProductGallery'
+        db.create_table('stockroom_productgallery', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('product', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Product'])),
+            ('images_available', self.gf('django.db.models.fields.IntegerField')(default=5)),
+            ('color', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Color'], null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['ProductGallery'])
+
+        # Adding model 'ProductImage'
+        db.create_table('stockroom_productimage', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('gallery', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.ProductGallery'])),
+            ('image', self.gf('django.db.models.fields.files.ImageField')(max_length=100)),
+            ('caption', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['ProductImage'])
+
+        # Adding model 'MeasurementUnit'
+        db.create_table('stockroom_measurementunit', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('abbreviation', self.gf('django.db.models.fields.CharField')(max_length=8, null=True, blank=True)),
+            ('verbose_name_plural', self.gf('django.db.models.fields.CharField')(max_length=10, null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['MeasurementUnit'])
+
+        # Adding model 'Measurement'
+        db.create_table('stockroom_measurement', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('measurement', self.gf('django.db.models.fields.DecimalField')(max_digits=6, decimal_places=2)),
+            ('unit', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.MeasurementUnit'])),
+        ))
+        db.send_create_signal('stockroom', ['Measurement'])
+
+        # Adding model 'Color'
+        db.create_table('stockroom_color', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=30)),
+            ('red', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
+            ('blue', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
+            ('green', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
+            ('swatch', self.gf('django.db.models.fields.files.ImageField')(max_length=100, null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['Color'])
+
+        # Adding model 'StockItem'
+        db.create_table('stockroom_stockitem', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('product', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Product'])),
+            ('measurement', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Measurement'], null=True, blank=True)),
+            ('color', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Color'], null=True, blank=True)),
+            ('package_count', self.gf('django.db.models.fields.IntegerField')(default=1)),
+        ))
+        db.send_create_signal('stockroom', ['StockItem'])
+
+        # Adding model 'Price'
+        db.create_table('stockroom_price', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('stock_item', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.StockItem'])),
+            ('price', self.gf('django.db.models.fields.DecimalField')(max_digits=10, decimal_places=2)),
+            ('on_sale', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('created_on', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['Price'])
+
+        # Adding model 'Inventory'
+        db.create_table('stockroom_inventory', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('stock_item', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.StockItem'])),
+            ('for_sale', self.gf('django.db.models.fields.BooleanField')(default=True)),
+            ('quantity', self.gf('django.db.models.fields.IntegerField')(default=0)),
+            ('disable_sale_at', self.gf('django.db.models.fields.IntegerField')(default=0, null=True, blank=True)),
+            ('order_throttle', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+        ))
+        db.send_create_signal('stockroom', ['Inventory'])
+
+        # Adding model 'Cart'
+        db.create_table('stockroom_cart', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('created_on', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('checked_out', self.gf('django.db.models.fields.BooleanField')(default=False)),
+        ))
+        db.send_create_signal('stockroom', ['Cart'])
+
         # Adding model 'CartItem'
         db.create_table('stockroom_cartitem', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('cart', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Cart'])),
+            ('cart', self.gf('django.db.models.fields.related.ForeignKey')(related_name='cart_items', to=orm['stockroom.Cart'])),
             ('stock_item', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.StockItem'])),
             ('quantity', self.gf('django.db.models.fields.PositiveIntegerField')(default=1)),
         ))
@@ -20,6 +153,48 @@ class Migration(SchemaMigration):
 
     def backwards(self, orm):
         
+        # Deleting model 'Manufacturer'
+        db.delete_table('stockroom_manufacturer')
+
+        # Deleting model 'Brand'
+        db.delete_table('stockroom_brand')
+
+        # Deleting model 'Product'
+        db.delete_table('stockroom_product')
+
+        # Deleting model 'ProductCategory'
+        db.delete_table('stockroom_productcategory')
+
+        # Deleting model 'ProductRelationship'
+        db.delete_table('stockroom_productrelationship')
+
+        # Deleting model 'ProductGallery'
+        db.delete_table('stockroom_productgallery')
+
+        # Deleting model 'ProductImage'
+        db.delete_table('stockroom_productimage')
+
+        # Deleting model 'MeasurementUnit'
+        db.delete_table('stockroom_measurementunit')
+
+        # Deleting model 'Measurement'
+        db.delete_table('stockroom_measurement')
+
+        # Deleting model 'Color'
+        db.delete_table('stockroom_color')
+
+        # Deleting model 'StockItem'
+        db.delete_table('stockroom_stockitem')
+
+        # Deleting model 'Price'
+        db.delete_table('stockroom_price')
+
+        # Deleting model 'Inventory'
+        db.delete_table('stockroom_inventory')
+
+        # Deleting model 'Cart'
+        db.delete_table('stockroom_cart')
+
         # Deleting model 'CartItem'
         db.delete_table('stockroom_cartitem')
 
@@ -48,7 +223,7 @@ class Migration(SchemaMigration):
         },
         'stockroom.cartitem': {
             'Meta': {'ordering': "('cart',)", 'object_name': 'CartItem'},
-            'cart': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.Cart']"}),
+            'cart': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'cart_items'", 'to': "orm['stockroom.Cart']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'quantity': ('django.db.models.fields.PositiveIntegerField', [], {'default': '1'}),
             'stock_item': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.StockItem']"})
@@ -110,16 +285,17 @@ class Migration(SchemaMigration):
         },
         'stockroom.productcategory': {
             'Meta': {'object_name': 'ProductCategory'},
+            'active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '120'}),
-            'parent': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.ProductCategory']", 'null': 'True', 'blank': 'True'}),
+            'parent': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'children'", 'null': 'True', 'to': "orm['stockroom.ProductCategory']"}),
             'slug': ('django.db.models.fields.SlugField', [], {'db_index': 'True', 'unique': 'True', 'max_length': '50', 'blank': 'True'})
         },
         'stockroom.productgallery': {
             'Meta': {'object_name': 'ProductGallery'},
             'color': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.Color']", 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'images_available': ('django.db.models.fields.IntegerField', [], {'default': '10'}),
+            'images_available': ('django.db.models.fields.IntegerField', [], {'default': '5'}),
             'product': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.Product']"})
         },
         'stockroom.productimage': {
