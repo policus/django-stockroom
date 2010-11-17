@@ -105,7 +105,7 @@ class Migration(SchemaMigration):
         # Adding model 'StockItem'
         db.create_table('stockroom_stockitem', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('product', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Product'])),
+            ('product', self.gf('django.db.models.fields.related.ForeignKey')(related_name='stock', to=orm['stockroom.Product'])),
             ('measurement', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Measurement'], null=True, blank=True)),
             ('color', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['stockroom.Color'], null=True, blank=True)),
             ('package_count', self.gf('django.db.models.fields.IntegerField')(default=1)),
@@ -318,7 +318,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'measurement': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.Measurement']", 'null': 'True', 'blank': 'True'}),
             'package_count': ('django.db.models.fields.IntegerField', [], {'default': '1'}),
-            'product': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['stockroom.Product']"})
+            'product': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'stock'", 'to': "orm['stockroom.Product']"})
         },
         'taggit.tag': {
             'Meta': {'object_name': 'Tag'},

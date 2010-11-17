@@ -11,6 +11,7 @@ except ImportError:
 from datetime import datetime
 
 from managers import CategoryChildrenManager, ActiveInventoryManager
+from thumbs import ImageWithThumbsField
 
 # Set default values
     
@@ -23,6 +24,11 @@ if settings.STOCKROOM_CATEGORY_SEPARATOR:
     STOCKROOM_CATEGORY_SEPARATOR = settings.STOCKROOM_CATEGORY_SEPARATOR
 else:
     STOCKROOM_CATEGORY_SEPARATOR = ' :: '
+    
+if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
+    PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
+else:
+    PRODUCT_THUMBNAILS = None
 
 class Manufacturer(models.Model):
     name = models.CharField(max_length=120)
@@ -36,7 +42,7 @@ class Brand(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(null=True, blank=True)
     manufacturer = models.ForeignKey('Manufacturer')
-    logo = models.ImageField(upload_to='stockroom/brand_logos', null=True, blank=True)
+    logo = ImageWithThumbsField(upload_to='stockroom/brand_logos', null=True, blank=True)
     
     def __unicode__(self):
         return _("%s - %s" % (self.manufacturer, self.name))
@@ -132,7 +138,7 @@ class ProductGallery(models.Model):
 
 class ProductImage(models.Model):
     gallery = models.ForeignKey('ProductGallery')
-    image = models.ImageField(upload_to='stockroom/product_images/%Y/%m/%d')
+    image = ImageWithThumbsField(upload_to='stockroom/product_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
     caption = models.TextField(null=True, blank=True)
     
     class Meta:
@@ -174,7 +180,7 @@ class Color(models.Model):
     red = models.IntegerField(default=0, blank=True, null=True)
     blue = models.IntegerField(default=0, blank=True, null=True)
     green = models.IntegerField(default=0, blank=True, null=True)
-    swatch = models.ImageField(upload_to='stockroom/color_swatches/', blank=True, null=True)
+    swatch = ImageWithThumbsField(upload_to='stockroom/color_swatches/', blank=True, null=True)
     
     def __unicode__(self):
         return _(self.name)
