@@ -2,9 +2,10 @@ from django.db.models import Count
 from django.http import HttpResponse
 from piston.handler import BaseHandler
 from piston.utils import validate, rc
-from stockroom.models import ProductCategory, Product, Inventory, StockItem, Color, CartItem, Cart as CartModel
+from stockroom.models import ProductCategory, Product, ProductGallery, Inventory, StockItem, Color, CartItem, Cart as CartModel
 from stockroom.cart import Cart
 from stockroom.forms import CartItemForm
+from stockroom.utils import structure_products
 
 import logging
 
@@ -50,10 +51,10 @@ class ProductHandler(BaseHandler):
     exclude = (),
     model = Product
     
-    def read(self, request, pk=None):
-        if pk:
+    def read(self, request, product_pk=None):
+        if product_pk:
             try:
-                product = Product.objects.select_related().get(pk=pk)   
+                product = Product.objects.select_related().get(pk=product_pk)   
                 stock = StockItem.objects.filter(product=product)
                 colors = []
                 for s in stock:
@@ -70,48 +71,40 @@ class ProductHandler(BaseHandler):
         else: 
             try:
                 products = Product.objects.select_related().all()
-                response = []
-                for p in products:
-                    item = {
-                        'id' : p.pk,
-                        'title' : p.title,
-                        'description' : p.description,
-                        'sku' : p.sku,
-                        'tags' : p.tags.all(),
-                        'category' : {
-                            'id' : p.category.pk,
-                            'name' : p.category.name,
-                            'slug' : p.category.slug,
-                        },
-                        'brand' : {
-                            'id' : p.brand.pk,
-                            'name' : p.brand.name,
-                            'manufacturer' : {
-                                'id' : p.brand.manufacturer.pk,
-                                'name' : p.brand.manufacturer.name,
-                            },
-                        },
-                    }
-                    
-                    inventory = []
-                    for s in p.stock.all():
-                        inventory.append(s)
-                        
-                    
-                    
+                response = structure_products(products)
+                
             except Product.DoesNotExist:
                 response = None
             return response
 
+class ProductGalleryHandler(BaseHandler):
+    allowed_methods = ('GET',)
+    exclude = ()
+    model = ProductGallery
+    
+    def read(self, request, product_pk=None):
+        if pk:
+            try:
+                product_gallery = ProductGallery.objects.get(product=product_pk)
+            except ProductGallery.DoesNotExist:
+                product_gallery = None
+            return product_gallery
+        else:
+            try: 
+                product_galleries = ProductGallery.objects.all()
+            except ProductGallery.DoesNotExist:
+                product_galleries = None
+            return product_galleries
+    
 class StockHandler(BaseHandler):
     allwed_methods = ('GET',)
     exclude = ()
     model = StockItem
     
-    def read(self, request, pk=None):
+    def read(self, request, product_pk=None):
         if pk:
             try:
-                stock = StockItem.objects.select_related().filter(product=pk)
+                stock = StockItem.objects.select_related().filter(product=product_pk)
             except StockItem.DoesNotExist:
                 stock = None
             return stock
@@ -120,7 +113,7 @@ class InventoryHandler(BaseHandler):
     allowed_methods = ('GET',)
     model = Inventory
     
-    def read(self, request, pk=None):
+    def read(self, request, product_pk=None):
         try:
             inventory = Inventory.active.filter(stock_item__product=pk)
             stock = []

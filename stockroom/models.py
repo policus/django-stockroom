@@ -56,6 +56,8 @@ class Product(models.Model):
     sku = models.CharField(max_length=30, null=True, blank=True, help_text='An internal unique identifier for this product')
     tags = TaggableManager()
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
+    created_on = models.DateTimeField(auto_now_add=True)
+    last_updates = models.DateTimeField(auto_now=True)
     def __unicode__(self):
         return _(self.title)
 
@@ -118,7 +120,7 @@ class ProductRelationship(models.Model):
         
 
 class ProductGallery(models.Model):
-    product = models.ForeignKey('Product')
+    product = models.ForeignKey('Product', related_name='gallery')
     images_available = models.IntegerField(default=IMAGE_GALLERY_LIMIT)
     color = models.ForeignKey('Color', null=True, blank=True)
     
@@ -137,7 +139,7 @@ class ProductGallery(models.Model):
     
 
 class ProductImage(models.Model):
-    gallery = models.ForeignKey('ProductGallery')
+    gallery = models.ForeignKey('ProductGallery', related_name='image')
     image = ImageWithThumbsField(upload_to='stockroom/product_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
     caption = models.TextField(null=True, blank=True)
     
@@ -191,7 +193,15 @@ class StockItem(models.Model):
     measurement = models.ForeignKey('Measurement', blank=True, null=True)
     color = models.ForeignKey('Color', blank=True, null=True)
     package_count = models.IntegerField(default=1)
-    
+    price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        help_text='All prices in USD. Use this field to override the standard pricing of a product for this sepcific stock item.',
+        blank=True,
+        null=True,
+        verbose_name='Override Product Pricing'
+    )
+     
     def __unicode__(self):
         return_string = ''
         if self.package_count > 1:
@@ -200,13 +210,9 @@ class StockItem(models.Model):
         if self.color:
             return_string += " in %s" % self.color
         return return_string
-    
-    def get_price(self):
-        price = Price.objects.get(stock_item=self)
-        return price.price
         
 class Price(models.Model):
-    stock_item = models.ForeignKey('StockItem')
+    product = models.ForeignKey('Product', related_name='pricing')
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')
     on_sale = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
