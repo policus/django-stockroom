@@ -5,7 +5,6 @@ def structure_products(products):
         # Collect image galleries
         galleries = []
         for g in p.gallery.all():
-            
             images = []
             for i in g.image.all():
                 image = {
@@ -38,6 +37,7 @@ def structure_products(products):
                     'swatch' : s.color.swatch,
                 },
                 'package_count' : s.package_count,
+                'price_override': s.price,
                 
             }
             inventory.append(stock_item)
@@ -47,6 +47,7 @@ def structure_products(products):
             'id' : p.pk,
             'title' : p.title,
             'description' : p.description,
+            'price' : p.get_price(),
             'sku' : p.sku,
             'tags' : p.tags.all(),
             'category' : {

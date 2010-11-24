@@ -58,9 +58,16 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
+    
     def __unicode__(self):
         return _(self.title)
-
+    
+    def get_price(self):
+        try:
+            price = Price.objects.filter(product=self).order_by('-created_on')[:1]
+        except Price.DoesNotExist:
+            price = None
+        return "$%s" % (price[0].price,)
 
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
@@ -170,7 +177,7 @@ class MeasurementUnit(models.Model):
         
 
 class Measurement(models.Model):
-    measurement = models.DecimalField(max_digits=6, decimal_places=2)
+    measurement = models.CharField(max_length=8)
     unit = models.ForeignKey('MeasurementUnit')
     
     def __unicode__(self):
@@ -221,7 +228,7 @@ class Price(models.Model):
         ordering = ['-created_on']
     
     def __unicode__(self):
-        return _("Pricing for %s of %s" % (self.stock_item.measurement, self.stock_item.product.title))
+        return _("Pricing for %s" % (self.product.title))
 
 
 class Inventory(models.Model):
