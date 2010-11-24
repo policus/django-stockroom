@@ -199,6 +199,7 @@ class StockItem(models.Model):
     product = models.ForeignKey('Product', related_name='stock')
     measurement = models.ForeignKey('Measurement', blank=True, null=True)
     color = models.ForeignKey('Color', blank=True, null=True)
+    package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)')
     package_count = models.IntegerField(default=1)
     price = models.DecimalField(
         max_digits=10, 
