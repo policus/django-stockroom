@@ -60,7 +60,7 @@ class Cart(object):
             cart_item.quantity = quantity
             cart_item.save(force_update=True)
         except CartItem.DoesNotExist:
-            raise ItemDoesNotExist
+            self.add(stock_item, unit_price, quantity)
     
     def clear(self):
         for cart_item in self.cart.cart_items.all():

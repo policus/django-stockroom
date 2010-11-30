@@ -146,7 +146,7 @@ class ProductGallery(models.Model):
     
 
 class ProductImage(models.Model):
-    gallery = models.ForeignKey('ProductGallery', related_name='image')
+    gallery = models.ForeignKey('ProductGallery', related_name='images')
     image = ImageWithThumbsField(upload_to='stockroom/product_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
     caption = models.TextField(null=True, blank=True)
     
@@ -181,7 +181,7 @@ class Measurement(models.Model):
     unit = models.ForeignKey('MeasurementUnit')
     
     def __unicode__(self):
-        return _('%s - %s' % (self.unit, self.measurement))
+        return _('%s-%s' % (self.unit, self.measurement))
 
 
 class Color(models.Model):
@@ -218,6 +218,12 @@ class StockItem(models.Model):
         if self.color:
             return_string += " in %s" % self.color
         return return_string
+    
+    def get_price(self):
+        if self.price:
+            return self.price
+        else:
+            return self.product.get_price()
         
 class Price(models.Model):
     product = models.ForeignKey('Product', related_name='pricing')

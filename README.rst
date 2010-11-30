@@ -12,7 +12,13 @@ django-stockroom is a lightweight, pluggable e-commerce solution for Django-base
 
 
 Configuration Options
-**************************
+=====================
 
 PRODUCT_CATEGORY_SEPARATOR = ' :: '
 IMAGE_GALLERY_LIMIT = 8
+
+Requirements
+============
+Python 2.7.x
+Django 1.3.x
+

@@ -5,7 +5,7 @@ from piston.utils import validate, rc
 from stockroom.models import ProductCategory, Product, ProductGallery, Inventory, StockItem, Color, CartItem, Cart as CartModel
 from stockroom.cart import Cart
 from stockroom.forms import CartItemForm
-from stockroom.utils import structure_products
+from stockroom.utils import structure_products, structure_gallery
 
 import logging
 
@@ -82,20 +82,19 @@ class ProductGalleryHandler(BaseHandler):
     exclude = ()
     model = ProductGallery
     
-    def read(self, request, product_pk=None):
-        if pk:
-            try:
-                product_gallery = ProductGallery.objects.get(product=product_pk)
-            except ProductGallery.DoesNotExist:
-                product_gallery = None
-            return product_gallery
-        else:
-            try: 
-                product_galleries = ProductGallery.objects.all()
-            except ProductGallery.DoesNotExist:
-                product_galleries = None
-            return product_galleries
-    
+    def read(self, request, product_pk, color_pk=None):
+        try:
+            if color_pk:
+                product_galleries = ProductGallery.objects.select_related().get(product__pk=product_pk, color__pk=color_pk)
+            else:
+                product_galleries = ProductGallery.objects.select_related().filter(product=product_pk)
+            
+            response = structure_gallery(product_galleries)
+                
+        except ProductGallery.DoesNotExist:
+            response = None
+        return response
+            
 class StockHandler(BaseHandler):
     allwed_methods = ('GET',)
     exclude = ()
@@ -179,25 +178,40 @@ class CartHandler(CsrfExemptBaseHandler):
     
     @validate(CartItemForm, 'PUT')
     def update(self, request):
-        item = request.form.cleaned_data['stock_item']
+        try:
+            item = StockItem.objects.get(
+                color=request.form.cleaned_data['color'], 
+                measurement=request.form.cleaned_data['measurement'], 
+                product=request.form.cleaned_data['product'])
+        except StockItem.DoesNotExist:
+            return rc.NOT_FOUND
+            
         quantity = request.form.cleaned_data['quantity']
         cart = Cart(request)
         cart.update(item, item.get_price(), quantity)
         cart_info = cart.summary()
         cart_items = []
-        for item in cart:
+        for i in cart:
             cart_items.append({
-                'product' : item.stock_item.product,
-                'package_count' : item.stock_item.package_count,
-                'quantity' : item.quantity,
-                'unit_price' : item.stock_item.get_price(),
-                'color' : item.stock_item.color,
-                'measurement': item.stock_item.measurement,
+                'product' : i.stock_item.product,
+                'package_count' : i.stock_item.package_count,
+                'quantity' : i.quantity,
+                'unit_price' : i.stock_item.get_price(),
+                'color' : i.stock_item.color,
+                'measurement': i.stock_item.measurement,
             })
-
+                
         response = {
             'checked_out' : cart_info.checked_out,
             'created_on' : cart_info.created_on,
             'items' : cart_items,
+            'last_added' : {
+                'product' : item.product,
+                'package_count' : item.package_count,
+                'quantity' : quantity,
+                'unit_price' : item.get_price(),
+                'color' : item.color,
+                'measurement' : item.measurement,
+            }
         }
         return response
