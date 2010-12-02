@@ -84,6 +84,7 @@ class ProductImageAdmin(admin.ModelAdmin):
         model = ProductImage
 
 class PriceAdmin(admin.ModelAdmin):
+    list_display = ('__unicode__', 'price')
     class Meta:
         model = Price
 
