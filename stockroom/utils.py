@@ -6,6 +6,29 @@ if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
     PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
 else:
     PRODUCT_THUMBNAILS = None
+    
+def build_thumbnail_list(gallery_object):
+    images = []
+    for i in gallery_object.images.all():
+        head, tail = os.path.split(i.image.url)
+        filename, ext = os.path.splitext(tail)
+        sizes = {}
+        for s in PRODUCT_THUMBNAILS:
+            size = {
+                'width' : s[0],
+                'height' : s[1],
+                'url' : "%s/%s.%sx%s%s" % (head, filename, s[0], s[1], ext)
+            }
+            sizes.update({
+                '%sx%s' % (s[0], s[1]) : size,
+            })
+            
+        image = {
+            'caption' : i.caption,
+            'sizes' : sizes,
+        }
+        images.append(image)
+    return images
 
 def structure_products(product_object):
     
@@ -150,32 +173,11 @@ def structure_gallery(gallery_object):
             response.append(gallery)
         
     else:
-        images = []
-        for i in gallery_object.images.all():
-            head, tail = os.path.split(i.image.url)
-            filename, ext = os.path.splitext(tail)
-            sizes = {}
-            for s in PRODUCT_THUMBNAILS:
-                size = {
-                    'width' : s[0],
-                    'height' : s[1],
-                    'url' : "%s/%s.%sx%s%s" % (head, filename, s[0], s[1], ext)
-                }
-                sizes.update({
-                    '%sx%s' % (s[0], s[1]) : size,
-                })
-                
-            image = {
-                'caption' : i.caption,
-                'sizes' : sizes,
-            }
-            images.append(image)
-        
         response = {
             'id' : gallery_object.pk,
             'images_available' : gallery_object.images_available,
             'color' : gallery_object.color,
-            'images' : images,
+            'images' : build_thumbnail_list(gallery_object),
         }
     
     return response

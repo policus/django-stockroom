@@ -5,7 +5,7 @@ from piston.utils import validate, rc
 from stockroom.models import ProductCategory, Product, ProductGallery, Inventory, StockItem, Color, CartItem, Cart as CartModel
 from stockroom.cart import Cart
 from stockroom.forms import CartItemForm
-from stockroom.utils import structure_products, structure_gallery
+from stockroom.utils import structure_products, structure_gallery, build_thumbnail_list
 
 import logging
 
@@ -159,12 +159,14 @@ class CartHandler(CsrfExemptBaseHandler):
             
         else:
             cart_items = []                
-            for item in cart:
+            for i in cart:
+                item_gallery = ProductGallery.objects.get(product=i.stock_item.product, color=i.stock_item.color)                
                 cart_items.append({
-                    'product' : item.stock_item.product,
-                    'package_count' : item.stock_item.package_count,
-                    'color' : item.stock_item.color,
-                    'measurement': item.stock_item.measurement,
+                    'product' : i.stock_item.product,
+                    'package_count' : i.stock_item.package_count,
+                    'color' : i.stock_item.color,
+                    'measurement': i.stock_item.measurement,
+                    'thumbnails' : build_thumbnail_list(item_gallery),
                 })
         
             response = {
@@ -185,13 +187,15 @@ class CartHandler(CsrfExemptBaseHandler):
                 product=request.form.cleaned_data['product'])
         except StockItem.DoesNotExist:
             return rc.NOT_FOUND
-            
+        
+        product_galleries = ProductGallery.objects.filter(product=item.product)    
         quantity = request.form.cleaned_data['quantity']
         cart = Cart(request)
         cart.update(item, item.get_price(), quantity)
         cart_info = cart.summary()
         cart_items = []
         for i in cart:
+                    
             cart_items.append({
                 'product' : i.stock_item.product,
                 'package_count' : i.stock_item.package_count,
@@ -199,6 +203,7 @@ class CartHandler(CsrfExemptBaseHandler):
                 'unit_price' : i.stock_item.get_price(),
                 'color' : i.stock_item.color,
                 'measurement': i.stock_item.measurement,
+                'thumbnails' : build_thumbnail_list(product_galleries.get(color=i.stock_item.color))
             })
                 
         response = {
@@ -212,6 +217,7 @@ class CartHandler(CsrfExemptBaseHandler):
                 'unit_price' : item.get_price(),
                 'color' : item.color,
                 'measurement' : item.measurement,
+                'thumbnails' : build_thumbnail_list(product_galleries.get(color=item.color))
             }
         }
         return response

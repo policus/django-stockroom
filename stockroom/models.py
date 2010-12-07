@@ -144,7 +144,12 @@ class ProductGallery(models.Model):
         self.images_available = self.images_available - 1
         super(ProductGallery, self).save()
     
-
+    def get_thumbnails(self):
+        thumbnails = []
+        for i in self.images.all():
+            thumbnails.append(i)
+        return thumbnails
+        
 class ProductImage(models.Model):
     gallery = models.ForeignKey('ProductGallery', related_name='images')
     image = ImageWithThumbsField(upload_to='stockroom/product_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
@@ -178,11 +183,14 @@ class MeasurementUnit(models.Model):
 
 class Measurement(models.Model):
     measurement = models.CharField(max_length=8)
+    abbreviation = models.CharField(max_length=3, null=True, blank=True)
     unit = models.ForeignKey('MeasurementUnit')
     
     def __unicode__(self):
-        return _('%s-%s' % (self.unit, self.measurement))
-
+        if self.abbreviation:
+            return _("%s-%s" % (self.unit, self.abbreviation))
+        else:
+            return _("%s-%s" % (self.unit, self.measurement))
 
 class Color(models.Model):
     name = models.CharField(max_length=30)
