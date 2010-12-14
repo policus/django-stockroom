@@ -54,7 +54,6 @@ class Product(models.Model):
     title = models.CharField(max_length=120)
     description = models.TextField(blank=True, null=True)
     sku = models.CharField(max_length=30, null=True, blank=True, help_text='An internal unique identifier for this product')
-    tags = TaggableManager()
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
@@ -64,11 +63,21 @@ class Product(models.Model):
     
     def get_price(self):
         try:
-            price = Price.objects.filter(product=self).order_by('-created_on')[:1]
+            price = Price.objects.filter(product=self).order_by('-created_on')[0]
+            return price.price
         except Price.DoesNotExist:
-            price = None
-        return "$%s" % (price[0].price,)
-
+            return None
+    
+    def get_thumb(self):
+        try:
+            gallery = ProductGallery.objects.filter(product=self)[0]
+            thumb = gallery.get_thumbnails()
+            return thumb[0].image
+        except ProductGallery.DoesNotExist:
+            return False
+        
+        
+    
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
     name = models.CharField(max_length=120)
@@ -118,7 +127,7 @@ class ProductCategory(models.Model):
                 
 
 class ProductRelationship(models.Model):
-    from_product = models.ForeignKey('Product', related_name='from_product')
+    from_product = models.ForeignKey('Product', related_name='related_products')
     to_product = models.ForeignKey('Product', related_name='to_product')
     description = models.CharField(max_length=140, help_text="A tweet-length (140 character) description of the relationship")
     
@@ -269,7 +278,6 @@ class Cart(models.Model):
         cart_time = datetime.strftime(self.created_on, "%b %d, %Y at %I:%M:%S%p")
         return _("Cart created on %s" % cart_time)
 
-
 class CartItem(models.Model):
     cart = models.ForeignKey('Cart', related_name='cart_items')
     stock_item = models.ForeignKey('StockItem')
@@ -283,5 +291,5 @@ class CartItem(models.Model):
     def __unicode__(self):
         return _("%s" % (self.stock_item))
     
-    def sub_total(self):
-        return self.quantity * self.unit_price
+    def subtotal(self):
+        return self.quantity * self.stock_item.get_price()

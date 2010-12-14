@@ -1,5 +1,5 @@
 from django.conf import settings
-from collections import Counter
+from counter import Counter
 import os
 
 if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
@@ -22,7 +22,7 @@ def build_thumbnail_list(gallery_object):
             sizes.update({
                 '%sx%s' % (s[0], s[1]) : size,
             })
-            
+        
         image = {
             'caption' : i.caption,
             'sizes' : sizes,
@@ -86,7 +86,6 @@ def structure_products(product_object):
                 'description' : p.description,
                 'price' : p.get_price(),
                 'sku' : p.sku,
-                'tags' : p.tags.all(),
                 'category' : {
                     'id' : p.category.pk,
                     'name' : p.category.name,
@@ -127,7 +126,6 @@ def structure_products(product_object):
             'description' : product_object.description,
             'price' : product_object.get_price(),
             'sku' : product_object.sku,
-            'tags' : product_object.tags.all(),
             'category' : {
                 'id' : product_object.category.pk,
                 'name' : product_object.category.name,

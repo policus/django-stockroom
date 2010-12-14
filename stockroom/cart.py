@@ -90,6 +90,16 @@ class Cart(object):
         self.cart.checked_out = True
         self.cart.save()
         return True
-    
+ 
     def summary(self):
         return self.cart
+    
+    def subtotal(self):
+        try:
+            cart_items = CartItem.objects.filter(cart=self.cart)
+            subtotal = 0.0
+            for item in cart_items:
+                subtotal = subtotal + (item.quantity * float(item.stock_item.get_price()))
+            return subtotal
+        except CartItem.DoesNotExist:
+            return 0.0

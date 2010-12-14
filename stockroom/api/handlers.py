@@ -188,14 +188,13 @@ class CartHandler(CsrfExemptBaseHandler):
         except StockItem.DoesNotExist:
             return rc.NOT_FOUND
         
-        product_galleries = ProductGallery.objects.filter(product=item.product)    
         quantity = request.form.cleaned_data['quantity']
         cart = Cart(request)
         cart.update(item, item.get_price(), quantity)
         cart_info = cart.summary()
         cart_items = []
         for i in cart:
-                    
+            thumb = i.stock_item.product.get_thumb()
             cart_items.append({
                 'product' : i.stock_item.product,
                 'package_count' : i.stock_item.package_count,
@@ -203,9 +202,12 @@ class CartHandler(CsrfExemptBaseHandler):
                 'unit_price' : i.stock_item.get_price(),
                 'color' : i.stock_item.color,
                 'measurement': i.stock_item.measurement,
-                'thumbnails' : build_thumbnail_list(product_galleries.get(color=i.stock_item.color))
+                'thumbnail' : {
+                    '80x80' : thumb.url_80x80,
+                }
             })
                 
+        thumb = item.product.get_thumb()        
         response = {
             'checked_out' : cart_info.checked_out,
             'created_on' : cart_info.created_on,
@@ -217,7 +219,9 @@ class CartHandler(CsrfExemptBaseHandler):
                 'unit_price' : item.get_price(),
                 'color' : item.color,
                 'measurement' : item.measurement,
-                'thumbnails' : build_thumbnail_list(product_galleries.get(color=item.color))
+                'thumbnail' : {
+                    '80x80' : thumb.url_80x80,
+                }
             }
         }
         return response
