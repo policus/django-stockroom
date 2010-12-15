@@ -4,6 +4,7 @@ from models import *
 class ProductCategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     list_display = ['name', 'parent',]
+    list_filter = ('parent',)
     class Meta:
         model = ProductCategory
 
