@@ -2,33 +2,32 @@ from django.conf import settings
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _
-
-try:
-    from taggit.managers import TaggableManager
-except ImportError:
-    raise "You must have django-taggit installed to use django-stockroom"
-
 from datetime import datetime
-
 from managers import CategoryChildrenManager, ActiveInventoryManager
 from thumbs import ImageWithThumbsField
+from units import STOCKROOM_UNITS
 
 # Set default values
     
-if settings.IMAGE_GALLERY_LIMIT:
+try:
     IMAGE_GALLERY_LIMIT = settings.IMAGE_GALLERY_LIMIT
-else:
-    IMAGE_GALLERY_LIMIT = 8
-
-if settings.STOCKROOM_CATEGORY_SEPARATOR:
-    STOCKROOM_CATEGORY_SEPARATOR = settings.STOCKROOM_CATEGORY_SEPARATOR
-else:
-    STOCKROOM_CATEGORY_SEPARATOR = ' :: '
+except AttributeError:
+    IMAGE_GALLERY_LIMIT = 8    
     
-if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
+try:
+    STOCKROOM_CATEGORY_SEPARATOR = settings.STOCKROOM_CATEGORY_SEPARATOR
+except AttributeError:
+    STOCKROOM_CATEGORY_SEPARATOR = ' :: '
+
+try:
     PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
-else:
+except AttributeError:
     PRODUCT_THUMBNAILS = None
+
+try:
+    ATTRIBUTE_VALUE_UNITS = settings.STOCKROOM_UNITS
+except AttributeError:
+    ATTRIBUTE_VALUE_UNITS = STOCKROOM_UNITS
 
 class Manufacturer(models.Model):
     name = models.CharField(max_length=120)
@@ -36,7 +35,6 @@ class Manufacturer(models.Model):
     
     def __unicode__(self):
         return _(self.name)
-
 
 class Brand(models.Model):
     name = models.CharField(max_length=120)
@@ -47,7 +45,6 @@ class Brand(models.Model):
     def __unicode__(self):
         return _("%s - %s" % (self.manufacturer, self.name))
     
-
 class Product(models.Model):
     category = models.ForeignKey('ProductCategory', null=True, blank=True)
     brand = models.ForeignKey('Brand')
@@ -74,10 +71,15 @@ class Product(models.Model):
             thumb = gallery.get_thumbnails()
             return thumb[0].image
         except ProductGallery.DoesNotExist:
-            return False
-        
-        
+            return False        
+
+class ProductAttribute(models.Model):
+    name = models.CharField(max_length=80)
+    help_text = models.TextField(null=True, blank=True)
     
+    def __unicode__(self):
+        return _(self.name)
+
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
     name = models.CharField(max_length=120)
@@ -138,15 +140,12 @@ class ProductRelationship(models.Model):
 class ProductGallery(models.Model):
     product = models.ForeignKey('Product', related_name='gallery')
     images_available = models.IntegerField(default=IMAGE_GALLERY_LIMIT)
-    color = models.ForeignKey('Color', null=True, blank=True)
     
     class Meta:
         verbose_name_plural = 'image galleries'
     
     def __unicode__(self):
         return_string = _("Image gallery for %s" % self.product)
-        if self.color:
-            return_string += _(" in %s" % self.color)
         return return_string
     
     def image_added(self):
@@ -169,53 +168,14 @@ class ProductImage(models.Model):
     
     def __unicode__(self):
         return_string = _("%s" % self.gallery.product)
-        if self.gallery.color:
-            return_string += _(" in %s" % self.gallery.color)
         return return_string
     
     def save(self, force_insert=False, force_update=False):
         self.gallery.image_added()
         super(ProductImage, self).save()
-            
-
-class MeasurementUnit(models.Model):
-    name = models.CharField(max_length=20)
-    abbreviation = models.CharField(max_length=8, blank=True, null=True)
-    verbose_name_plural = models.CharField(max_length=10, blank=True, null=True)
     
-    def __unicode__(self):
-        if self.abbreviation:
-            return _(self.abbreviation)
-        else:
-            return _(self.name)
-        
-
-class Measurement(models.Model):
-    measurement = models.CharField(max_length=8)
-    abbreviation = models.CharField(max_length=3, null=True, blank=True)
-    unit = models.ForeignKey('MeasurementUnit')
-    
-    def __unicode__(self):
-        if self.abbreviation:
-            return _("%s-%s" % (self.unit, self.abbreviation))
-        else:
-            return _("%s-%s" % (self.unit, self.measurement))
-
-class Color(models.Model):
-    name = models.CharField(max_length=30)
-    red = models.IntegerField(default=0, blank=True, null=True)
-    blue = models.IntegerField(default=0, blank=True, null=True)
-    green = models.IntegerField(default=0, blank=True, null=True)
-    swatch = ImageWithThumbsField(upload_to='stockroom/color_swatches/', blank=True, null=True)
-    
-    def __unicode__(self):
-        return _(self.name)
-    
-
 class StockItem(models.Model):
     product = models.ForeignKey('Product', related_name='stock')
-    measurement = models.ForeignKey('Measurement', blank=True, null=True)
-    color = models.ForeignKey('Color', blank=True, null=True)
     package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)')
     package_count = models.IntegerField(default=1)
     price = models.DecimalField(
@@ -231,9 +191,6 @@ class StockItem(models.Model):
         return_string = ''
         if self.package_count > 1:
             return_string += "%s-pack " % self.package_count
-        return_string += "%s of %s" % (self.measurement, self.product)
-        if self.color:
-            return_string += " in %s" % self.color
         return return_string
     
     def get_price(self):
@@ -241,6 +198,15 @@ class StockItem(models.Model):
             return self.price
         else:
             return self.product.get_price()
+
+class StockItemAttribute(models.Model):
+    stock_item = models.ForeignKey('StockItem', related_name='stock_attributes')
+    product_attribute = models.ForeignKey('ProductAttribute')
+    value = models.CharField(max_length=255)
+    unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS)
+    
+    def __unicode__(self):
+        return "%s, %s" % (self.stock_item, self.product_attribute)
         
 class Price(models.Model):
     product = models.ForeignKey('Product', related_name='pricing')
@@ -253,7 +219,6 @@ class Price(models.Model):
     
     def __unicode__(self):
         return _("Pricing for %s" % (self.product.title))
-
 
 class Inventory(models.Model):
     stock_item = models.ForeignKey('StockItem')

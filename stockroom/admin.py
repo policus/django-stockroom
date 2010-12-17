@@ -25,16 +25,6 @@ class PriceInline(admin.TabularInline):
     fields = ('price', 'on_sale',)
 
 
-class MeasurementUnitAdmin(admin.ModelAdmin):
-    class Meta:
-        model = MeasurementUnit
-
-
-class MeasurementAdmin(admin.ModelAdmin):
-    class Meta:
-        model = Measurement
-
-
 class StockItemAdmin(admin.ModelAdmin):
     class Meta:
         model = StockItem
@@ -50,14 +40,8 @@ class InventoryAdmin(admin.ModelAdmin):
     class Meta:
         model = Inventory
 
-
 class InventoryInline(admin.TabularInline):
     model = Inventory
-
-class ColorAdmin(admin.ModelAdmin):
-    class Meta:
-        model = Color
-
 
 class ProductRelationshipInline(admin.TabularInline):
     model = ProductRelationship
@@ -93,19 +77,24 @@ class CartAdmin(admin.ModelAdmin):
     class Meta:
         model = Cart
 
-
 class CartItemAdmin(admin.ModelAdmin):
     list_display = ('stock_item', 'quantity', 'cart')
     class Meta:
         model = CartItem
 
+class ProductAttributeAdmin(admin.ModelAdmin):
+    class Meta:
+        model = ProductAttribute
+
+class StockItemAttributeAdmin(admin.ModelAdmin):
+    list_display = ('stock_item', 'product_attribute', 'value')
+    class Meta:
+        model = StockItemAttribute
+
 admin.site.register(ProductCategory, ProductCategoryAdmin)
 admin.site.register(Manufacturer, ManufacturerAdmin)
 admin.site.register(Brand, BrandAdmin)
 admin.site.register(Product, ProductAdmin)
-admin.site.register(MeasurementUnit, MeasurementUnitAdmin)
-admin.site.register(Measurement, MeasurementAdmin)
-admin.site.register(Color, ColorAdmin)
 admin.site.register(StockItem, StockItemAdmin)
 admin.site.register(Inventory, InventoryAdmin)
 admin.site.register(ProductGallery, ProductGalleryAdmin)
@@ -113,3 +102,5 @@ admin.site.register(ProductImage, ProductImageAdmin)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(Price, PriceAdmin)
+admin.site.register(ProductAttribute, ProductAttributeAdmin)
+admin.site.register(StockItemAttribute,StockItemAttributeAdmin)
