@@ -63,8 +63,8 @@ class Product(models.Model):
     
     def get_price(self):
         try:
-            price = Price.objects.filter(product=self).order_by('-created_on')[0]
-            return price.price
+            price = Price.objects.filter(product=self).order_by('-created_on')
+            return price[0].price
         except Price.DoesNotExist:
             return None
     
