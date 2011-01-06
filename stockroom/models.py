@@ -9,25 +9,10 @@ from units import STOCKROOM_UNITS
 
 # Set default values
     
-try:
-    IMAGE_GALLERY_LIMIT = settings.IMAGE_GALLERY_LIMIT
-except AttributeError:
-    IMAGE_GALLERY_LIMIT = 8    
-    
-try:
-    STOCKROOM_CATEGORY_SEPARATOR = settings.STOCKROOM_CATEGORY_SEPARATOR
-except AttributeError:
-    STOCKROOM_CATEGORY_SEPARATOR = ' :: '
-
-try:
-    PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
-except AttributeError:
-    PRODUCT_THUMBNAILS = None
-
-try:
-    ATTRIBUTE_VALUE_UNITS = settings.STOCKROOM_UNITS
-except AttributeError:
-    ATTRIBUTE_VALUE_UNITS = STOCKROOM_UNITS
+IMAGE_GALLERY_LIMIT = getattr(settings, 'IMAGE_GALLERY_LIMIT', 8)
+STOCKROOM_CATEGORY_SEPARATOR = getattr(settings, 'STOCKROOM_CATEGORY_SEPARATOR', u' :: ')
+PRODUCT_THUMBNAILS = getattr(settings, 'STOCKROOM_PRODUCT_THUMBNAIL_SIZES', None)
+ATTRIBUTE_VALUE_UNITS = getattr(settings, 'STOCKROOM_UNITS', STOCKROOM_UNITS)
 
 class Manufacturer(models.Model):
     name = models.CharField(max_length=120)
@@ -121,7 +106,9 @@ class ProductCategory(models.Model):
     def __repr__(self):
         parent_list = self._recurse_for_parents(self)
         parent_list.append(self.name)
-        return self.get_separator().join(parent_list)
+        # we need to encode this to ascii as per python docs:
+        # http://docs.python.org/reference/datamodel.html#object.__repr__
+        return self.get_separator().join(parent_list).encode("ascii", "replace")
 
     def save(self, force_insert=False, force_update=False):
         self.slug = slugify(self.name)
@@ -188,7 +175,8 @@ class StockItem(models.Model):
     )
      
     def __unicode__(self):
-        return_string = ''
+        return_string = "%s %s" % (self.product, self.package_title)
+        # return_string = "%s %s" % (self.product, self.package_title)
         if self.package_count > 1:
             return_string += "%s-pack " % self.package_count
         return return_string
