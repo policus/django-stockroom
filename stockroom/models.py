@@ -176,7 +176,6 @@ class StockItem(models.Model):
      
     def __unicode__(self):
         return_string = "%s %s" % (self.product, self.package_title)
-        # return_string = "%s %s" % (self.product, self.package_title)
         if self.package_count > 1:
             return_string += "%s-pack " % self.package_count
         return return_string
