@@ -2,7 +2,7 @@ from django.db.models import Count
 from django.http import HttpResponse
 from piston.handler import BaseHandler
 from piston.utils import validate, rc
-from stockroom.models import ProductCategory, Product, ProductGallery, Inventory, StockItem, Color, CartItem, Cart as CartModel
+from stockroom.models import ProductCategory, Product, ProductGallery, Inventory, StockItem, CartItem, Cart as CartModel
 from stockroom.cart import Cart
 from stockroom.forms import CartItemForm
 from stockroom.utils import structure_products, structure_gallery, build_thumbnail_list

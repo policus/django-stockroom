@@ -2,10 +2,8 @@ from django.conf import settings
 from counter import Counter
 import os
 
-if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
-    PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
-else:
-    PRODUCT_THUMBNAILS = None
+
+PRODUCT_THUMBNAILS = getattr(settings, 'STOCKROOM_PRODUCT_THUMBNAIL_SIZES', None)
     
 def build_thumbnail_list(gallery_object):
     images = []
