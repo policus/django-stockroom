@@ -2,7 +2,7 @@ from django.db.models import Count
 from django.http import HttpResponse
 from piston.handler import BaseHandler
 from piston.utils import validate, rc
-from stockroom.models import ProductCategory, Product, ProductGallery, Inventory, StockItem, CartItem, Cart as CartModel
+from stockroom.models import ProductCategory, Product, ProductGallery, StockItem, CartItem, Cart as CartModel
 from stockroom.cart import Cart
 from stockroom.forms import CartItemForm
 from stockroom.utils import structure_products, structure_gallery, build_thumbnail_list
@@ -107,34 +107,6 @@ class StockHandler(BaseHandler):
             except StockItem.DoesNotExist:
                 stock = None
             return stock
-
-class InventoryHandler(BaseHandler):
-    allowed_methods = ('GET',)
-    model = Inventory
-    
-    def read(self, request, product_pk=None):
-        try:
-            inventory = Inventory.active.filter(stock_item__product=pk)
-            stock = []
-            for s in inventory:
-                stock.append({
-                    'id' : s.pk,
-                    'title' : s.__unicode__(),
-                    'color' : s.stock_item.color,
-                    'measurement' : {
-                        'value' : s.stock_item.measurement.measurement,
-                        'unit' : s.stock_item.measurement.unit,
-                    },
-                    'package_count' : s.stock_item.package_count,
-                    'quantity' : s.quantity,
-                    'order_throttle': s.order_throttle,
-                    'disable_sale_at': s.disable_sale_at,
-                })
-                
-        except Inventory.DoesNotExist:
-            stock = None
-        
-        return stock
 
 class CartHandler(CsrfExemptBaseHandler):
     allowed_methods = ('GET', 'PUT',)

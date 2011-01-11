@@ -24,4 +24,7 @@ STOCKROOM_UNITS = (
     ('tbsp', 'tablespoon'),
     ('fl oz', 'fluid ounces'),
     ('cp', 'cup'),
+    ('US', 'US Clothing Size'),
+    ('EU', 'European Clothing Size'),
+    ('UK', 'British Clothing Size'),
 )

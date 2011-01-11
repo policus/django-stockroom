@@ -9,7 +9,7 @@ from units import STOCKROOM_UNITS
 
 # Set default values
     
-IMAGE_GALLERY_LIMIT = getattr(settings, 'IMAGE_GALLERY_LIMIT', 8)
+IMAGE_GALLERY_LIMIT = getattr(settings, 'STOCKROOM_IMAGE_GALLERY_LIMIT', 8)
 STOCKROOM_CATEGORY_SEPARATOR = getattr(settings, 'STOCKROOM_CATEGORY_SEPARATOR', ' :: ')
 PRODUCT_THUMBNAILS = getattr(settings, 'STOCKROOM_PRODUCT_THUMBNAIL_SIZES', None)
 ATTRIBUTE_VALUE_UNITS = getattr(settings, 'STOCKROOM_UNITS', STOCKROOM_UNITS)
@@ -28,7 +28,7 @@ class Brand(models.Model):
     logo = ImageWithThumbsField(upload_to='stockroom/brand_logos', null=True, blank=True)
     
     def __unicode__(self):
-        return _("%s - %s" % (self.manufacturer, self.name))
+        return _(self.name)
     
 class Product(models.Model):
     category = models.ForeignKey('ProductCategory', null=True, blank=True)
@@ -39,31 +39,22 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
-    
+    price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')
+    on_sale = models.BooleanField(default=False)
+
     def __unicode__(self):
         return _(self.title)
-    
-    def get_price(self):
-        try:
-            price = Price.objects.filter(product=self).order_by('-created_on')[0]
-            return price.price
-        except Price.DoesNotExist:
-            return None
-    
-    def get_thumb(self):
-        try:
-            gallery = ProductGallery.objects.filter(product=self)[0]
-            thumb = gallery.get_thumbnails()
-            return thumb[0].image
-        except ProductGallery.DoesNotExist:
-            return False        
 
-class ProductAttribute(models.Model):
-    name = models.CharField(max_length=80)
-    help_text = models.TextField(null=True, blank=True)
-    
-    def __unicode__(self):
-        return _(self.name)
+    def save(self, *args, **kw):
+        if self.pk is not None:
+            original = Product.objects.get(pk=self.pk)
+            if original.price != self.price:
+                PriceHistory.objects.create(
+                    product=self,
+                    price=self.price,
+                    on_sale=self.on_sale,
+                )
+        super(Product, self).save(*args, **kw)      
 
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
@@ -160,42 +151,71 @@ class ProductImage(models.Model):
     def save(self, force_insert=False, force_update=False):
         self.gallery.image_added()
         super(ProductImage, self).save()
+
+class ProductStock(models.Model):
+    for_sale = models.BooleanField(default=True)
+    product = models.ForeignKey('Product')
+    stock_item = models.ForeignKey('StockItem')
+    inventory = models.IntegerField(default=0)
+    quantity = models.IntegerField(default=0)
+    disable_sale_at = models.IntegerField(default=0, blank=True, null=True, help_text='Stockroom will stop the item from being sold once this quantity is reached (will accept negative numbers). Leave blank to disable')
+    order_throttle = models.IntegerField(blank=True, null=True, help_text='The maximum amount of this item that can be in an individaul order')
     
+class ProductAttribute(models.Model):
+    name = models.CharField(max_length=80)
+    slug = models.SlugField(unique=True)
+    help_text = models.TextField(null=True, blank=True)
+
+    def __unicode__(self):
+        return _(self.name)
+
+class StockItemAttributeValue(models.Model):
+    stock_item = models.ForeignKey('StockItem', related_name='attribute_values')
+    product_attribute = models.ForeignKey('ProductAttribute')
+    value = models.CharField(max_length=255)
+    unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS, null=True, blank=True)
+
+    def __unicode__(self):
+        return "%s %s" % (self.value, self.unit)
+
+    def display_value(self):
+        return "%s %s" % (self.value, self.unit)
+        
 class StockItem(models.Model):
-    product = models.ForeignKey('Product', related_name='stock')
-    package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)')
+    package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)', default='Individual Item')
     package_count = models.IntegerField(default=1)
-    price = models.DecimalField(
+    price_override = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
         help_text='All prices in USD. Use this field to override the standard pricing of a product for this sepcific stock item.',
         blank=True,
         null=True,
-        verbose_name='Override Product Pricing'
     )
-     
-    def __unicode__(self):
-        return_string = "%s %s" % (self.product, self.package_title)
-        if self.package_count > 1:
-            return_string += "%s-pack " % self.package_count
-        return return_string
     
-    def get_price(self):
-        if self.price:
-            return self.price
+    def __unicode__(self):
+        if self.package_title:
+            package_title = _(self.package_title)
         else:
-            return self.product.get_price()
-
-class StockItemAttribute(models.Model):
-    stock_item = models.ForeignKey('StockItem', related_name='stock_attributes')
-    product_attribute = models.ForeignKey('ProductAttribute')
-    value = models.CharField(max_length=255)
-    unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS)
-    
-    def __unicode__(self):
-        return "%s, %s" % (self.stock_item, self.product_attribute)
+            package_title = None
         
-class Price(models.Model):
+        attributes = StockItemAttributeValue.objects.filter(stock_item=self)
+        if package_title:
+            attribute_string = '%s - ' % (package_title,)
+        else:
+            attribute_string = ''
+                
+        for a in attributes:
+            attribute_string += "/%s:%s" % (a.product_attribute, a.display_value())
+            
+        return attribute_string
+        
+    def get_price(self):
+        if self.price_override:
+            return self.price_override
+        else:
+            return self.product.price
+        
+class PriceHistory(models.Model):
     product = models.ForeignKey('Product', related_name='pricing')
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')
     on_sale = models.BooleanField(default=False)
@@ -206,21 +226,6 @@ class Price(models.Model):
     
     def __unicode__(self):
         return _("Pricing for %s" % (self.product.title))
-
-class Inventory(models.Model):
-    stock_item = models.ForeignKey('StockItem')
-    for_sale = models.BooleanField(default=True)
-    quantity = models.IntegerField(default=0)
-    disable_sale_at = models.IntegerField(default=0, blank=True, null=True, help_text='Stockroom will stop the item from being sold once this quantity is reached (will accept negative numbers). Leave blank to disable')
-    order_throttle = models.IntegerField(blank=True, null=True, help_text='The maximum amount of this item that can be in an individaul order')
-    active = ActiveInventoryManager()
-    
-    class Meta:
-        verbose_name_plural = 'inventory'
-    
-    def __unicode__(self):
-        return _("%s" % (self.stock_item,))
-    
 
 class Cart(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)

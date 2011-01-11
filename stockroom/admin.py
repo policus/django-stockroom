@@ -1,4 +1,8 @@
 from django.contrib import admin
+from django.db import models
+from django import forms
+from django.forms.models import inlineformset_factory
+
 from models import *
 
 class ProductCategoryAdmin(admin.ModelAdmin):
@@ -18,45 +22,45 @@ class BrandAdmin(admin.ModelAdmin):
     class Meta:
         model = Brand
 
+class StockItemAttributeValueInline(admin.TabularInline):
+    model = StockItemAttributeValue
 
-class PriceInline(admin.TabularInline):
-    model = Price
-    extra = 1
-    fields = ('price', 'on_sale',)
-
-
+    
+class ProductStockInline(admin.TabularInline):
+    model = ProductStock
+    extra = 0
+                
 class StockItemAdmin(admin.ModelAdmin):
+    list_display = ('__unicode__', 'package_count', 'price_override',)
+    inlines = [
+        StockItemAttributeValueInline,
+    ]
     class Meta:
         model = StockItem
 
-
-class StockItemInline(admin.TabularInline):
+class StockItemInline(admin.StackedInline):
     model = StockItem
-    fk_name = 'product'
-    extra = 1
-
-
-class InventoryAdmin(admin.ModelAdmin):
-    class Meta:
-        model = Inventory
-
-class InventoryInline(admin.TabularInline):
-    model = Inventory
 
 class ProductRelationshipInline(admin.TabularInline):
     model = ProductRelationship
     fk_name = 'from_product'
 
+class ProductStockAdmin(admin.ModelAdmin):
+    class Meta:
+        model = ProductStock
+
 
 class ProductAdmin(admin.ModelAdmin):
-    inlines = [
-        ProductRelationshipInline,        
-    ]
     list_display = (
          'title', 'category', 'brand',
     )
+    inlines = [
+        ProductStockInline,
+        ProductRelationshipInline,
+    ]   
     class Meta:
         model = Product
+  
 
 class ProductGalleryAdmin(admin.ModelAdmin):
     class Meta:
@@ -68,10 +72,10 @@ class ProductImageAdmin(admin.ModelAdmin):
     class Meta:
         model = ProductImage
 
-class PriceAdmin(admin.ModelAdmin):
+class PriceHistoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'price')
     class Meta:
-        model = Price
+        model = PriceHistory
 
 class CartAdmin(admin.ModelAdmin):
     class Meta:
@@ -83,24 +87,22 @@ class CartItemAdmin(admin.ModelAdmin):
         model = CartItem
 
 class ProductAttributeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'help_text',)
+    prepopulated_fields = {"slug": ("name",)}
     class Meta:
         model = ProductAttribute
 
-class StockItemAttributeAdmin(admin.ModelAdmin):
-    list_display = ('stock_item', 'product_attribute', 'value')
-    class Meta:
-        model = StockItemAttribute
+
 
 admin.site.register(ProductCategory, ProductCategoryAdmin)
 admin.site.register(Manufacturer, ManufacturerAdmin)
 admin.site.register(Brand, BrandAdmin)
 admin.site.register(Product, ProductAdmin)
-admin.site.register(StockItem, StockItemAdmin)
-admin.site.register(Inventory, InventoryAdmin)
 admin.site.register(ProductGallery, ProductGalleryAdmin)
 admin.site.register(ProductImage, ProductImageAdmin)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
-admin.site.register(Price, PriceAdmin)
+admin.site.register(PriceHistory, PriceHistoryAdmin)
 admin.site.register(ProductAttribute, ProductAttributeAdmin)
-admin.site.register(StockItemAttribute,StockItemAttributeAdmin)
+admin.site.register(StockItem, StockItemAdmin)
+admin.site.register(ProductStock, ProductStockAdmin)
