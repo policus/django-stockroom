@@ -48,6 +48,8 @@ class ProductCategory(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(blank=True, unique=True)
     parent = models.ForeignKey('self', blank=True, null=True, related_name='children')
+    objects = models.Manager()
+    children = CategoryChildrenManager()
     
     class Meta:
         verbose_name = 'category'
@@ -100,6 +102,10 @@ class ProductRelationship(models.Model):
     
     def __unicode__(self):
         return _('Product related to %s' % self.from_product)
+    
+    class Meta:
+        verbose_name = 'product relationship'
+        verbose_name_plural = 'product relationships'
         
 class StockItemImage(models.Model):
     stock_item = models.ForeignKey('StockItem', related_name='images')
@@ -107,6 +113,7 @@ class StockItemImage(models.Model):
     caption = models.TextField(null=True, blank=True)
     
     class Meta:
+        verbose_name = 'image'
         verbose_name_plural = 'images'
     
     def __unicode__(self):
@@ -127,6 +134,10 @@ class StockItemAttribute(models.Model):
     name = models.CharField(max_length=80)
     slug = models.SlugField(unique=True)
     help_text = models.TextField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'attribute'
+        verbose_name_plural = 'attributes'
 
     def __unicode__(self):
         return _(self.name)
@@ -135,6 +146,10 @@ class StockItemAttributeValue(models.Model):
     attribute = models.ForeignKey('StockItemAttribute')
     value = models.CharField(max_length=255)
     unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS, null=True, blank=True)
+    
+    class Meta:
+        verbose_name = 'attribute value'
+        verbose_name_plural = 'attribute values'
 
     def __unicode__(self):
         return "%s : %s %s" % (self.attribute, self.value, self.unit)
@@ -155,6 +170,10 @@ class StockItem(models.Model):
     )
     on_sale = models.BooleanField(default=False)
     image_count = models.IntegerField(default=0)
+    
+    class Meta:
+        verbose_name = 'inventory'
+        verbose_name_plural = 'inventory'
     
     def __unicode__(self):
         return _("%s of %s" % (self.package_title, self.product))
@@ -188,6 +207,7 @@ class PriceHistory(models.Model):
     
     class Meta:
         ordering = ['-created_on']
+        verbose_name = 'price history'
         verbose_name_plural = 'price history'
     
     def __unicode__(self):
@@ -196,6 +216,10 @@ class PriceHistory(models.Model):
 class Cart(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     checked_out = models.BooleanField(default=False)
+    
+    class Meta:
+        verbose_name = 'cart'
+        verbose_name_plural = 'carts'
     
     def __unicode__(self):
         cart_time = datetime.strftime(self.created_on, "%b %d, %Y at %I:%M:%S%p")
@@ -207,8 +231,8 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     
     class Meta:
-        verbose_name = _('cart item')
-        verbose_name_plural = _('cart items')
+        verbose_name = 'item in cart'
+        verbose_name_plural = 'items in carts'
         ordering = ('cart',)
     
     def __unicode__(self):
