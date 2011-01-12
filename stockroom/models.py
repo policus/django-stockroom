@@ -37,28 +37,7 @@ class Product(models.Model):
     image = models.ForeignKey('StockItemImage', null=True, blank=True)
     
     def __unicode__(self):
-<<<<<<< HEAD
-        return _(self.title)
-    
-    def get_price(self):
-        try:
-            price = Price.objects.filter(product=self).order_by('-created_on')
-            return price[0].price
-        except Price.DoesNotExist:
-            return None
-    
-    def get_thumb(self):
-        try:
-            gallery = ProductGallery.objects.filter(product=self)[0]
-            thumb = gallery.get_thumbnails()
-            return thumb[0].image
-        except ProductGallery.DoesNotExist:
-            return False
-        
-        
-=======
         return _(self.title)      
->>>>>>> trunk
     
     def add_image(self, stock_item_image, *args, **kwargs):
         self.image = stock_item_image
