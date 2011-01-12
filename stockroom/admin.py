@@ -24,7 +24,7 @@ class BrandAdmin(admin.ModelAdmin):
 
 class StockItemInline(admin.StackedInline):
     model = StockItem
-    extra = 1
+    extra = 0
     filter_horizontal = ('attributes',)
 
 class StockItemAdmin(admin.ModelAdmin):
@@ -38,18 +38,18 @@ class StockItemAttributeAdmin(admin.ModelAdmin):
 class StockItemAttributeValueAdmin(admin.ModelAdmin):
     class Meta:
         model = StockItemAttributeValue
-        
-class ProductAdmin(admin.ModelAdmin):
-    inlines = [
-        StockItemInline,
-    ]
-    class Meta:
-        model = Product
 
 class ProductRelationshipInline(admin.TabularInline):
     model = ProductRelationship
     fk_name = 'from_product'
-  
+
+class ProductAdmin(admin.ModelAdmin):
+    inlines = [
+        StockItemInline,
+        ProductRelationshipInline,
+    ]
+    class Meta:
+        model = Product
 
 class ProductGalleryAdmin(admin.ModelAdmin):
     class Meta:

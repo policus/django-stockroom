@@ -41,18 +41,7 @@ class Product(models.Model):
     last_updates = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
-        return _(self.title)
-
-    def save(self, *args, **kw):
-        if self.pk is not None:
-            original = Product.objects.get(pk=self.pk)
-            if original.price != self.price:
-                PriceHistory.objects.create(
-                    product=self,
-                    price=self.price,
-                    on_sale=self.on_sale,
-                )
-        super(Product, self).save(*args, **kw)      
+        return _(self.title)      
 
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
@@ -178,33 +167,25 @@ class StockItem(models.Model):
     price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        help_text='All prices in USD. Use this field to override the standard pricing of a product for this sepcific stock item.',
-        blank=True,
-        null=True,
+        help_text='All prices in USD',
     )
     on_sale = models.BooleanField(default=False)
-    
-    
-    
+        
     def __unicode__(self):
-        if self.package_title:
-            package_title = _(self.package_title)
-        else:
-            package_title = None
-        
-        attributes = StockItemAttributeValue.objects.filter(stock_item=self)
-        if package_title:
-            attribute_string = '%s - ' % (package_title,)
-        else:
-            attribute_string = ''
-                
-        for a in attributes:
-            attribute_string += "/%s:%s" % (a.product_attribute, a.display_value())
-            
-        return attribute_string
-        
+        return _(self.package_title)
+    def save(self, *args, **kw):
+       if self.pk is not None:
+           original = StockItem.objects.get(pk=self.pk)
+           if original.price != self.price:
+               PriceHistory.objects.create(
+                   stock_item=self,
+                   price=self.price,
+                   on_sale=self.on_sale,
+               )
+       super(StockItem, self).save(*args, **kw)
+       
 class PriceHistory(models.Model):
-    product = models.ForeignKey('Product', related_name='pricing')
+    stock_item = models.ForeignKey('StockItem')
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')
     on_sale = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
@@ -213,8 +194,8 @@ class PriceHistory(models.Model):
         ordering = ['-created_on']
     
     def __unicode__(self):
-        return _("Pricing for %s" % (self.product.title))
-
+        return self.price
+        
 class Cart(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     checked_out = models.BooleanField(default=False)
