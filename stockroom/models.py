@@ -4,14 +4,9 @@ from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _
 from datetime import datetime
 from managers import CategoryChildrenManager, ActiveInventoryManager
-from thumbs import ImageWithThumbsField
 from units import STOCKROOM_UNITS
 
 # Set default values
-    
-IMAGE_GALLERY_LIMIT = getattr(settings, 'STOCKROOM_IMAGE_GALLERY_LIMIT', 8)
-STOCKROOM_CATEGORY_SEPARATOR = getattr(settings, 'STOCKROOM_CATEGORY_SEPARATOR', ' :: ')
-PRODUCT_THUMBNAILS = getattr(settings, 'STOCKROOM_PRODUCT_THUMBNAIL_SIZES', None)
 ATTRIBUTE_VALUE_UNITS = getattr(settings, 'STOCKROOM_UNITS', STOCKROOM_UNITS)
 
 class Manufacturer(models.Model):
@@ -25,7 +20,7 @@ class Brand(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(null=True, blank=True)
     manufacturer = models.ForeignKey('Manufacturer')
-    logo = ImageWithThumbsField(upload_to='stockroom/brand_logos', null=True, blank=True)
+    logo = models.ImageField(upload_to='stockroom/brand_logos', null=True, blank=True)
     
     def __unicode__(self):
         return _(self.name)
@@ -75,7 +70,7 @@ class ProductCategory(models.Model):
         return parent_list
 
     def get_separator(self):
-        return STOCKROOM_CATEGORY_SEPARATOR
+        return ':'
         
     def _parents_repr(self):
         parent_list = self._recurse_for_parents(self)
@@ -108,7 +103,7 @@ class ProductRelationship(models.Model):
         
 class StockItemImage(models.Model):
     stock_item = models.ForeignKey('StockItem', related_name='images')
-    image = ImageWithThumbsField(upload_to='stockroom/stock_item_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
+    image = models.ImageField(upload_to='stockroom/stock_items/%Y/%m/%d')
     caption = models.TextField(null=True, blank=True)
     
     class Meta:
