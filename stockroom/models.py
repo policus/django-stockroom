@@ -39,9 +39,14 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
-
+    image = models.ForeignKey('StockItemImage', null=True, blank=True)
+    
     def __unicode__(self):
         return _(self.title)      
+    
+    def add_image(self, stock_item_image, *args, **kwargs):
+        self.image = stock_item_image
+        super(Product, self).save(*args, **kwargs)
 
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
@@ -101,44 +106,28 @@ class ProductRelationship(models.Model):
     def __unicode__(self):
         return _('Product related to %s' % self.from_product)
         
-
-class ProductGallery(models.Model):
-    product = models.ForeignKey('Product', related_name='gallery')
-    images_available = models.IntegerField(default=IMAGE_GALLERY_LIMIT)
-    
-    class Meta:
-        verbose_name_plural = 'image galleries'
-    
-    def __unicode__(self):
-        return_string = _("Image gallery for %s" % self.product)
-        return return_string
-    
-    def image_added(self):
-        self.images_available = self.images_available - 1
-        super(ProductGallery, self).save()
-    
-    def get_thumbnails(self):
-        thumbnails = []
-        for i in self.images.all():
-            thumbnails.append(i)
-        return thumbnails
-        
-class ProductImage(models.Model):
-    gallery = models.ForeignKey('ProductGallery', related_name='images')
-    image = ImageWithThumbsField(upload_to='stockroom/product_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
+class StockItemImage(models.Model):
+    stock_item = models.ForeignKey('StockItem', related_name='images')
+    image = ImageWithThumbsField(upload_to='stockroom/stock_item_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
     caption = models.TextField(null=True, blank=True)
     
     class Meta:
         verbose_name_plural = 'images'
     
     def __unicode__(self):
-        return_string = _("%s" % self.gallery.product)
-        return return_string
+        return _('Image for %s' % (self.stock_item,))
     
-    def save(self, force_insert=False, force_update=False):
-        self.gallery.image_added()
-        super(ProductImage, self).save()
-    
+    def save(self, *args, **kwargs):
+        self.stock_item.image_added()
+        super(StockItemImage, self).save(*args, **kwargs)
+        if self.stock_item.product.image == None:
+            self.stock_item.product.add_image(self)
+        
+    def delete(self, *args, **kwargs):
+        self.stock_item.image_removed()
+        super(StockItemImage, self).delete(*args, **kwargs)
+
+
 class StockItemAttribute(models.Model):
     name = models.CharField(max_length=80)
     slug = models.SlugField(unique=True)
@@ -170,9 +159,11 @@ class StockItem(models.Model):
         help_text='All prices in USD',
     )
     on_sale = models.BooleanField(default=False)
-        
+    image_count = models.IntegerField(default=0)
+    
     def __unicode__(self):
-        return _(self.package_title)
+        return _("%s of %s" % (self.package_title, self.product))
+        
     def save(self, *args, **kw):
        if self.pk is not None:
            original = StockItem.objects.get(pk=self.pk)
@@ -183,6 +174,16 @@ class StockItem(models.Model):
                    on_sale=self.on_sale,
                )
        super(StockItem, self).save(*args, **kw)
+    
+    def image_added(self, *args, **kwargs):
+        self.image_count = self.image_count + 1
+        super(StockItem, self).save(*args, **kwargs)
+        return self.image_count
+    
+    def image_removed(self, *args, **kwargs):
+        self.image_count = self.image_count - 1
+        super(StockItem, self).save(*args, **kwargs)
+        return self.image_count
        
 class PriceHistory(models.Model):
     stock_item = models.ForeignKey('StockItem')
@@ -192,6 +193,7 @@ class PriceHistory(models.Model):
     
     class Meta:
         ordering = ['-created_on']
+        verbose_name_plural = 'price history'
     
     def __unicode__(self):
         return self.price

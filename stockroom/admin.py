@@ -27,7 +27,20 @@ class StockItemInline(admin.StackedInline):
     extra = 0
     filter_horizontal = ('attributes',)
 
+class StockItemImageAdmin(admin.ModelAdmin):
+    class Meta:
+        model = StockItemImage
+
+class StockItemImageInline(admin.TabularInline):
+    model = StockItemImage
+    extra = 1
+    
 class StockItemAdmin(admin.ModelAdmin):
+    list_display = ('product', 'price', 'inventory', 'image_count')
+    filter_horizontal = ('attributes',)
+    inlines = [
+        StockItemImageInline,
+    ]
     class Meta:
         model = StockItem
 
@@ -38,6 +51,7 @@ class StockItemAttributeAdmin(admin.ModelAdmin):
 class StockItemAttributeValueAdmin(admin.ModelAdmin):
     class Meta:
         model = StockItemAttributeValue
+
 
 class ProductRelationshipInline(admin.TabularInline):
     model = ProductRelationship
@@ -51,16 +65,6 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'brand',)
     class Meta:
         model = Product
-
-class ProductGalleryAdmin(admin.ModelAdmin):
-    class Meta:
-        model = ProductGallery
-
-
-class ProductImageAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'caption')
-    class Meta:
-        model = ProductImage
 
 class PriceHistoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'price')
@@ -80,8 +84,6 @@ class CartItemAdmin(admin.ModelAdmin):
 admin.site.register(ProductCategory, ProductCategoryAdmin)
 admin.site.register(Manufacturer, ManufacturerAdmin)
 admin.site.register(Brand, BrandAdmin)
-admin.site.register(ProductGallery, ProductGalleryAdmin)
-admin.site.register(ProductImage, ProductImageAdmin)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(PriceHistory, PriceHistoryAdmin)
@@ -89,3 +91,4 @@ admin.site.register(Product, ProductAdmin)
 admin.site.register(StockItem, StockItemAdmin)
 admin.site.register(StockItemAttribute, StockItemAttributeAdmin)
 admin.site.register(StockItemAttributeValue, StockItemAttributeValueAdmin)
+admin.site.register(StockItemImage, StockItemImageAdmin)

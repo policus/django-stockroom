@@ -2,7 +2,7 @@ from django.db.models import Count
 from django.http import HttpResponse
 from piston.handler import BaseHandler
 from piston.utils import validate, rc
-from stockroom.models import ProductCategory, Product, ProductGallery, StockItem, CartItem, Cart as CartModel
+from stockroom.models import ProductCategory, Product, StockItem, CartItem, Cart as CartModel
 from stockroom.cart import Cart
 from stockroom.forms import CartItemForm
 from stockroom.utils import structure_products, structure_gallery, build_thumbnail_list
@@ -77,24 +77,6 @@ class ProductHandler(BaseHandler):
                 response = None
             return response
 
-class ProductGalleryHandler(BaseHandler):
-    allowed_methods = ('GET',)
-    exclude = ()
-    model = ProductGallery
-    
-    def read(self, request, product_pk, color_pk=None):
-        try:
-            if color_pk:
-                product_galleries = ProductGallery.objects.select_related().get(product__pk=product_pk, color__pk=color_pk)
-            else:
-                product_galleries = ProductGallery.objects.select_related().filter(product=product_pk)
-            
-            response = structure_gallery(product_galleries)
-                
-        except ProductGallery.DoesNotExist:
-            response = None
-        return response
-            
 class StockHandler(BaseHandler):
     allwed_methods = ('GET',)
     exclude = ()
