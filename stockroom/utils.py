@@ -2,10 +2,8 @@ from django.conf import settings
 from counter import Counter
 import os
 
-if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
-    PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
-else:
-    PRODUCT_THUMBNAILS = None
+
+PRODUCT_THUMBNAILS = getattr(settings, 'STOCKROOM_PRODUCT_THUMBNAIL_SIZES', None)
     
 def build_thumbnail_list(gallery_object):
     images = []
@@ -53,29 +51,10 @@ def structure_products(product_object):
                 galleries.append(gallery)
         
             stock = []
-            available_sizes = Counter()
-            available_colors = Counter()
             for s in p.stock.all():
-                available_sizes[s.measurement] += 1
-                available_colors[s.color] += 1
                 stock_item = {
-                    'size' : {
-                        'measurement' : s.measurement.measurement,
-                        'unit' : {
-                            'name' : s.measurement.unit.name,
-                            'abbreviation' : s.measurement.unit.abbreviation,
-                        },
-                    },
-                    'color' : {
-                        'name' : s.color.name,
-                        'red' : s.color.red,
-                        'green' : s.color.green,
-                        'blue' : s.color.blue,
-                        'swatch' : s.color.swatch,
-                    },
                     'package_count' : s.package_count,
-                    'price_override': s.price,
-                
+                    'price_override': s.price,                
                 }
                 stock.append(stock_item)
                 
@@ -113,13 +92,7 @@ def structure_products(product_object):
     else:
         galleries = product_object.gallery.all()
         stock = product_object.stock.all()
-        available_sizes = Counter()
-        available_colors = Counter()
-        for s in stock:
-            available_sizes[s.measurement] += 1
-            available_colors[s.color] += 1
-        
-            
+                    
         response = {
             'id' : product_object.pk,
             'title' : product_object.title,
@@ -142,8 +115,6 @@ def structure_products(product_object):
             'galleries' : galleries,
             'inventory' : {
                 'stock' : stock,
-                'available_colors' : available_colors,
-                'available_sizes' : available_sizes,
             },
         }
     

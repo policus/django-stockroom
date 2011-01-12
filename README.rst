@@ -21,4 +21,5 @@ Requirements
 ============
 Python 2.7.x
 Django 1.3.x
+Django Piston
 

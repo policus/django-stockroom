@@ -2,33 +2,12 @@ from django.conf import settings
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.translation import ugettext as _
-
-try:
-    from taggit.managers import TaggableManager
-except ImportError:
-    raise "You must have django-taggit installed to use django-stockroom"
-
 from datetime import datetime
-
 from managers import CategoryChildrenManager, ActiveInventoryManager
-from thumbs import ImageWithThumbsField
+from units import STOCKROOM_UNITS
 
 # Set default values
-    
-if settings.IMAGE_GALLERY_LIMIT:
-    IMAGE_GALLERY_LIMIT = settings.IMAGE_GALLERY_LIMIT
-else:
-    IMAGE_GALLERY_LIMIT = 8
-
-if settings.STOCKROOM_CATEGORY_SEPARATOR:
-    STOCKROOM_CATEGORY_SEPARATOR = settings.STOCKROOM_CATEGORY_SEPARATOR
-else:
-    STOCKROOM_CATEGORY_SEPARATOR = ' :: '
-    
-if settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES:
-    PRODUCT_THUMBNAILS = settings.STOCKROOM_PRODUCT_THUMBNAIL_SIZES
-else:
-    PRODUCT_THUMBNAILS = None
+ATTRIBUTE_VALUE_UNITS = getattr(settings, 'STOCKROOM_UNITS', STOCKROOM_UNITS)
 
 class Manufacturer(models.Model):
     name = models.CharField(max_length=120)
@@ -37,17 +16,15 @@ class Manufacturer(models.Model):
     def __unicode__(self):
         return _(self.name)
 
-
 class Brand(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(null=True, blank=True)
     manufacturer = models.ForeignKey('Manufacturer')
-    logo = ImageWithThumbsField(upload_to='stockroom/brand_logos', null=True, blank=True)
+    logo = models.ImageField(upload_to='stockroom/brand_logos', null=True, blank=True)
     
     def __unicode__(self):
-        return _("%s - %s" % (self.manufacturer, self.name))
+        return _(self.name)
     
-
 class Product(models.Model):
     category = models.ForeignKey('ProductCategory', null=True, blank=True)
     brand = models.ForeignKey('Brand')
@@ -57,8 +34,10 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
+    image = models.ForeignKey('StockItemImage', null=True, blank=True)
     
     def __unicode__(self):
+<<<<<<< HEAD
         return _(self.title)
     
     def get_price(self):
@@ -77,7 +56,14 @@ class Product(models.Model):
             return False
         
         
+=======
+        return _(self.title)      
+>>>>>>> trunk
     
+    def add_image(self, stock_item_image, *args, **kwargs):
+        self.image = stock_item_image
+        super(Product, self).save(*args, **kwargs)
+
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
     name = models.CharField(max_length=120)
@@ -105,7 +91,7 @@ class ProductCategory(models.Model):
         return parent_list
 
     def get_separator(self):
-        return STOCKROOM_CATEGORY_SEPARATOR
+        return ':'
         
     def _parents_repr(self):
         parent_list = self._recurse_for_parents(self)
@@ -119,7 +105,9 @@ class ProductCategory(models.Model):
     def __repr__(self):
         parent_list = self._recurse_for_parents(self)
         parent_list.append(self.name)
-        return self.get_separator().join(parent_list)
+        # we need to encode this to ascii as per python docs:
+        # http://docs.python.org/reference/datamodel.html#object.__repr__
+        return self.get_separator().join(parent_list).encode("ascii", "replace")
 
     def save(self, force_insert=False, force_update=False):
         self.slug = slugify(self.name)
@@ -134,142 +122,98 @@ class ProductRelationship(models.Model):
     def __unicode__(self):
         return _('Product related to %s' % self.from_product)
         
-
-class ProductGallery(models.Model):
-    product = models.ForeignKey('Product', related_name='gallery')
-    images_available = models.IntegerField(default=IMAGE_GALLERY_LIMIT)
-    color = models.ForeignKey('Color', null=True, blank=True)
-    
-    class Meta:
-        verbose_name_plural = 'image galleries'
-    
-    def __unicode__(self):
-        return_string = _("Image gallery for %s" % self.product)
-        if self.color:
-            return_string += _(" in %s" % self.color)
-        return return_string
-    
-    def image_added(self):
-        self.images_available = self.images_available - 1
-        super(ProductGallery, self).save()
-    
-    def get_thumbnails(self):
-        thumbnails = []
-        for i in self.images.all():
-            thumbnails.append(i)
-        return thumbnails
-        
-class ProductImage(models.Model):
-    gallery = models.ForeignKey('ProductGallery', related_name='images')
-    image = ImageWithThumbsField(upload_to='stockroom/product_images/%Y/%m/%d', sizes=PRODUCT_THUMBNAILS)
+class StockItemImage(models.Model):
+    stock_item = models.ForeignKey('StockItem', related_name='images')
+    image = models.ImageField(upload_to='stockroom/stock_items/%Y/%m/%d')
     caption = models.TextField(null=True, blank=True)
     
     class Meta:
         verbose_name_plural = 'images'
     
     def __unicode__(self):
-        return_string = _("%s" % self.gallery.product)
-        if self.gallery.color:
-            return_string += _(" in %s" % self.gallery.color)
-        return return_string
+        return _('Image for %s' % (self.stock_item,))
     
-    def save(self, force_insert=False, force_update=False):
-        self.gallery.image_added()
-        super(ProductImage, self).save()
-            
-
-class MeasurementUnit(models.Model):
-    name = models.CharField(max_length=20)
-    abbreviation = models.CharField(max_length=8, blank=True, null=True)
-    verbose_name_plural = models.CharField(max_length=10, blank=True, null=True)
-    
-    def __unicode__(self):
-        if self.abbreviation:
-            return _(self.abbreviation)
-        else:
-            return _(self.name)
+    def save(self, *args, **kwargs):
+        self.stock_item.image_added()
+        super(StockItemImage, self).save(*args, **kwargs)
+        if self.stock_item.product.image == None:
+            self.stock_item.product.add_image(self)
         
+    def delete(self, *args, **kwargs):
+        self.stock_item.image_removed()
+        super(StockItemImage, self).delete(*args, **kwargs)
 
-class Measurement(models.Model):
-    measurement = models.CharField(max_length=8)
-    abbreviation = models.CharField(max_length=3, null=True, blank=True)
-    unit = models.ForeignKey('MeasurementUnit')
-    
-    def __unicode__(self):
-        if self.abbreviation:
-            return _("%s-%s" % (self.unit, self.abbreviation))
-        else:
-            return _("%s-%s" % (self.unit, self.measurement))
 
-class Color(models.Model):
-    name = models.CharField(max_length=30)
-    red = models.IntegerField(default=0, blank=True, null=True)
-    blue = models.IntegerField(default=0, blank=True, null=True)
-    green = models.IntegerField(default=0, blank=True, null=True)
-    swatch = ImageWithThumbsField(upload_to='stockroom/color_swatches/', blank=True, null=True)
-    
+class StockItemAttribute(models.Model):
+    name = models.CharField(max_length=80)
+    slug = models.SlugField(unique=True)
+    help_text = models.TextField(null=True, blank=True)
+
     def __unicode__(self):
         return _(self.name)
-    
 
+class StockItemAttributeValue(models.Model):
+    attribute = models.ForeignKey('StockItemAttribute')
+    value = models.CharField(max_length=255)
+    unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS, null=True, blank=True)
+
+    def __unicode__(self):
+        return "%s : %s %s" % (self.attribute, self.value, self.unit)
+
+    def display_value(self):
+        return "%s %s" % (self.value, self.unit)
+        
 class StockItem(models.Model):
-    product = models.ForeignKey('Product', related_name='stock')
-    measurement = models.ForeignKey('Measurement', blank=True, null=True)
-    color = models.ForeignKey('Color', blank=True, null=True)
-    package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)')
+    product = models.ForeignKey('Product')
+    attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
+    package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)', default='Individual Item')
     package_count = models.IntegerField(default=1)
+    inventory = models.IntegerField(default=0)
     price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
-        help_text='All prices in USD. Use this field to override the standard pricing of a product for this sepcific stock item.',
-        blank=True,
-        null=True,
-        verbose_name='Override Product Pricing'
+        help_text='All prices in USD',
     )
-     
-    def __unicode__(self):
-        return_string = ''
-        if self.package_count > 1:
-            return_string += "%s-pack " % self.package_count
-        return_string += "%s of %s" % (self.measurement, self.product)
-        if self.color:
-            return_string += " in %s" % self.color
-        return return_string
+    on_sale = models.BooleanField(default=False)
+    image_count = models.IntegerField(default=0)
     
-    def get_price(self):
-        if self.price:
-            return self.price
-        else:
-            return self.product.get_price()
+    def __unicode__(self):
+        return _("%s of %s" % (self.package_title, self.product))
         
-class Price(models.Model):
-    product = models.ForeignKey('Product', related_name='pricing')
+    def save(self, *args, **kw):
+       if self.pk is not None:
+           original = StockItem.objects.get(pk=self.pk)
+           if original.price != self.price:
+               PriceHistory.objects.create(
+                   stock_item=self,
+                   price=self.price,
+                   on_sale=self.on_sale,
+               )
+       super(StockItem, self).save(*args, **kw)
+    
+    def image_added(self, *args, **kwargs):
+        self.image_count = self.image_count + 1
+        super(StockItem, self).save(*args, **kwargs)
+        return self.image_count
+    
+    def image_removed(self, *args, **kwargs):
+        self.image_count = self.image_count - 1
+        super(StockItem, self).save(*args, **kwargs)
+        return self.image_count
+       
+class PriceHistory(models.Model):
+    stock_item = models.ForeignKey('StockItem')
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')
     on_sale = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         ordering = ['-created_on']
+        verbose_name_plural = 'price history'
     
     def __unicode__(self):
-        return _("Pricing for %s" % (self.product.title))
-
-
-class Inventory(models.Model):
-    stock_item = models.ForeignKey('StockItem')
-    for_sale = models.BooleanField(default=True)
-    quantity = models.IntegerField(default=0)
-    disable_sale_at = models.IntegerField(default=0, blank=True, null=True, help_text='Stockroom will stop the item from being sold once this quantity is reached (will accept negative numbers). Leave blank to disable')
-    order_throttle = models.IntegerField(blank=True, null=True, help_text='The maximum amount of this item that can be in an individaul order')
-    active = ActiveInventoryManager()
-    
-    class Meta:
-        verbose_name_plural = 'inventory'
-    
-    def __unicode__(self):
-        return _("%s" % (self.stock_item,))
-    
-
+        return self.price
+        
 class Cart(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     checked_out = models.BooleanField(default=False)
