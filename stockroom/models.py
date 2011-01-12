@@ -39,8 +39,6 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')
-    on_sale = models.BooleanField(default=False)
 
     def __unicode__(self):
         return _(self.title)
@@ -151,17 +149,8 @@ class ProductImage(models.Model):
     def save(self, force_insert=False, force_update=False):
         self.gallery.image_added()
         super(ProductImage, self).save()
-
-class ProductStock(models.Model):
-    for_sale = models.BooleanField(default=True)
-    product = models.ForeignKey('Product')
-    stock_item = models.ForeignKey('StockItem')
-    inventory = models.IntegerField(default=0)
-    quantity = models.IntegerField(default=0)
-    disable_sale_at = models.IntegerField(default=0, blank=True, null=True, help_text='Stockroom will stop the item from being sold once this quantity is reached (will accept negative numbers). Leave blank to disable')
-    order_throttle = models.IntegerField(blank=True, null=True, help_text='The maximum amount of this item that can be in an individaul order')
     
-class ProductAttribute(models.Model):
+class StockItemAttribute(models.Model):
     name = models.CharField(max_length=80)
     slug = models.SlugField(unique=True)
     help_text = models.TextField(null=True, blank=True)
@@ -171,7 +160,7 @@ class ProductAttribute(models.Model):
 
 class StockItemAttributeValue(models.Model):
     stock_item = models.ForeignKey('StockItem', related_name='attribute_values')
-    product_attribute = models.ForeignKey('ProductAttribute')
+    attribute = models.ForeignKey('StockItemAttribute')
     value = models.CharField(max_length=255)
     unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS, null=True, blank=True)
 
@@ -182,15 +171,21 @@ class StockItemAttributeValue(models.Model):
         return "%s %s" % (self.value, self.unit)
         
 class StockItem(models.Model):
+    product = models.ForeignKey('Product')
+    attributes = models.ManyToManyField('StockItemAttributeValue')
     package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)', default='Individual Item')
     package_count = models.IntegerField(default=1)
-    price_override = models.DecimalField(
+    inventory = models.IntegerField(default=0)
+    price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
         help_text='All prices in USD. Use this field to override the standard pricing of a product for this sepcific stock item.',
         blank=True,
         null=True,
     )
+    on_sale = models.BooleanField(default=False)
+    
+    
     
     def __unicode__(self):
         if self.package_title:
@@ -208,12 +203,6 @@ class StockItem(models.Model):
             attribute_string += "/%s:%s" % (a.product_attribute, a.display_value())
             
         return attribute_string
-        
-    def get_price(self):
-        if self.price_override:
-            return self.price_override
-        else:
-            return self.product.price
         
 class PriceHistory(models.Model):
     product = models.ForeignKey('Product', related_name='pricing')

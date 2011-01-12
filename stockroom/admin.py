@@ -22,44 +22,20 @@ class BrandAdmin(admin.ModelAdmin):
     class Meta:
         model = Brand
 
-class StockItemAttributeValueInline(admin.TabularInline):
-    model = StockItemAttributeValue
-
-    
-class ProductStockInline(admin.TabularInline):
-    model = ProductStock
-    extra = 0
-                
-class StockItemAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'package_count', 'price_override',)
-    inlines = [
-        StockItemAttributeValueInline,
-    ]
-    class Meta:
-        model = StockItem
-
 class StockItemInline(admin.StackedInline):
     model = StockItem
+    extra = 1
+
+class ProductAdmin(admin.ModelAdmin):
+    inlines = [
+        StockItemInline,
+    ]
+    class Meta:
+        model = Product
 
 class ProductRelationshipInline(admin.TabularInline):
     model = ProductRelationship
     fk_name = 'from_product'
-
-class ProductStockAdmin(admin.ModelAdmin):
-    class Meta:
-        model = ProductStock
-
-
-class ProductAdmin(admin.ModelAdmin):
-    list_display = (
-         'title', 'category', 'brand',
-    )
-    inlines = [
-        ProductStockInline,
-        ProductRelationshipInline,
-    ]   
-    class Meta:
-        model = Product
   
 
 class ProductGalleryAdmin(admin.ModelAdmin):
@@ -86,23 +62,13 @@ class CartItemAdmin(admin.ModelAdmin):
     class Meta:
         model = CartItem
 
-class ProductAttributeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug', 'help_text',)
-    prepopulated_fields = {"slug": ("name",)}
-    class Meta:
-        model = ProductAttribute
-
-
 
 admin.site.register(ProductCategory, ProductCategoryAdmin)
 admin.site.register(Manufacturer, ManufacturerAdmin)
 admin.site.register(Brand, BrandAdmin)
-admin.site.register(Product, ProductAdmin)
 admin.site.register(ProductGallery, ProductGalleryAdmin)
 admin.site.register(ProductImage, ProductImageAdmin)
 admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(PriceHistory, PriceHistoryAdmin)
-admin.site.register(ProductAttribute, ProductAttributeAdmin)
-admin.site.register(StockItem, StockItemAdmin)
-admin.site.register(ProductStock, ProductStockAdmin)
+admin.site.register(Product, ProductAdmin)
