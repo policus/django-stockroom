@@ -26,6 +26,18 @@ class StockItemInline(admin.StackedInline):
     model = StockItem
     extra = 1
 
+class StockItemAdmin(admin.ModelAdmin):
+    class Meta:
+        model = StockItem
+
+class StockItemAttributeAdmin(admin.ModelAdmin):
+    class Meta:
+        model = StockItemAttribute
+
+class StockItemAttributeValueAdmin(admin.ModelAdmin):
+    class Meta:
+        model = StockItemAttributeValue
+        
 class ProductAdmin(admin.ModelAdmin):
     inlines = [
         StockItemInline,
@@ -72,3 +84,6 @@ admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 admin.site.register(Product, ProductAdmin)
+admin.site.register(StockItem, StockItemAdmin)
+admin.site.register(StockItemAttribute, StockItemAttributeAdmin)
+admin.site.register(StockItemAttributeValue, StockItemAttributeValueAdmin)
