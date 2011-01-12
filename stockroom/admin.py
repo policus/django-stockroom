@@ -48,6 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
         StockItemInline,
         ProductRelationshipInline,
     ]
+    list_display = ('title', 'category', 'brand',)
     class Meta:
         model = Product
 

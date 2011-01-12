@@ -160,7 +160,7 @@ class StockItemAttributeValue(models.Model):
         
 class StockItem(models.Model):
     product = models.ForeignKey('Product')
-    attributes = models.ManyToManyField('StockItemAttributeValue')
+    attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
     package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)', default='Individual Item')
     package_count = models.IntegerField(default=1)
     inventory = models.IntegerField(default=0)
