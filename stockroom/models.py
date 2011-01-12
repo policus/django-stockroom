@@ -159,13 +159,12 @@ class StockItemAttribute(models.Model):
         return _(self.name)
 
 class StockItemAttributeValue(models.Model):
-    stock_item = models.ForeignKey('StockItem', related_name='attribute_values')
     attribute = models.ForeignKey('StockItemAttribute')
     value = models.CharField(max_length=255)
     unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS, null=True, blank=True)
 
     def __unicode__(self):
-        return "%s %s" % (self.value, self.unit)
+        return "%s : %s %s" % (self.attribute, self.value, self.unit)
 
     def display_value(self):
         return "%s %s" % (self.value, self.unit)

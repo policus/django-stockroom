@@ -25,6 +25,7 @@ class BrandAdmin(admin.ModelAdmin):
 class StockItemInline(admin.StackedInline):
     model = StockItem
     extra = 1
+    filter_horizontal = ('attributes',)
 
 class StockItemAdmin(admin.ModelAdmin):
     class Meta:
