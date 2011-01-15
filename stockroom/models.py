@@ -34,14 +34,23 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
-    image = models.ForeignKey('StockItemImage', null=True, blank=True)
     
     def __unicode__(self):
         return _(self.title)      
     
-    def add_image(self, stock_item_image, *args, **kwargs):
-        self.image = stock_item_image
-        super(Product, self).save(*args, **kwargs)
+class ProductImage(models.Model):
+    product = models.ForeignKey('Product', related_name='images')
+    attributes = models.ManyToManyField('StockItemAttributeValues', blank=True, null=True)
+    image_file = models.ImageField(upload_to='stockroom/products/%Y/%m/%d')
+    caption = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        verbose_name = 'image'
+        verbose_name_plural = 'images'
+    
+    def __unicode__(self):
+        return _("Image for %s" % self.product)
+    
 
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
@@ -100,28 +109,6 @@ class ProductRelationship(models.Model):
     
     def __unicode__(self):
         return _('Product related to %s' % self.from_product)
-        
-class StockItemImage(models.Model):
-    stock_item = models.ForeignKey('StockItem', related_name='images')
-    image = models.ImageField(upload_to='stockroom/stock_items/%Y/%m/%d')
-    caption = models.TextField(null=True, blank=True)
-    
-    class Meta:
-        verbose_name_plural = 'images'
-    
-    def __unicode__(self):
-        return _('Image for %s' % (self.stock_item,))
-    
-    def save(self, *args, **kwargs):
-        self.stock_item.image_added()
-        super(StockItemImage, self).save(*args, **kwargs)
-        if self.stock_item.product.image == None:
-            self.stock_item.product.add_image(self)
-        
-    def delete(self, *args, **kwargs):
-        self.stock_item.image_removed()
-        super(StockItemImage, self).delete(*args, **kwargs)
-
 
 class StockItemAttribute(models.Model):
     name = models.CharField(max_length=80)
@@ -154,7 +141,6 @@ class StockItem(models.Model):
         help_text='All prices in USD',
     )
     on_sale = models.BooleanField(default=False)
-    image_count = models.IntegerField(default=0)
     
     def __unicode__(self):
         return _("%s of %s" % (self.package_title, self.product))
@@ -170,16 +156,6 @@ class StockItem(models.Model):
                )
        super(StockItem, self).save(*args, **kw)
     
-    def image_added(self, *args, **kwargs):
-        self.image_count = self.image_count + 1
-        super(StockItem, self).save(*args, **kwargs)
-        return self.image_count
-    
-    def image_removed(self, *args, **kwargs):
-        self.image_count = self.image_count - 1
-        super(StockItem, self).save(*args, **kwargs)
-        return self.image_count
-       
 class PriceHistory(models.Model):
     stock_item = models.ForeignKey('StockItem')
     price = models.DecimalField(max_digits=10, decimal_places=2, help_text='All prices in USD')

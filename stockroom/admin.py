@@ -27,20 +27,31 @@ class StockItemInline(admin.StackedInline):
     extra = 0
     filter_horizontal = ('attributes',)
 
-class StockItemImageAdmin(admin.ModelAdmin):
+class ProductImageAdmin(admin.ModelAdmin):
     class Meta:
-        model = StockItemImage
+        model = ProductImage
 
-class StockItemImageInline(admin.TabularInline):
-    model = StockItemImage
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
     extra = 1
-    
-class StockItemAdmin(admin.ModelAdmin):
-    list_display = ('product', 'price', 'inventory', 'image_count')
-    filter_horizontal = ('attributes',)
+
+class ProductRelationshipInline(admin.TabularInline):
+    model = ProductRelationship
+    fk_name = 'from_product'
+
+class ProductAdmin(admin.ModelAdmin):
     inlines = [
-        StockItemImageInline,
+        StockItemInline,
+        ProductImageInline,
     ]
+    list_display = ('title', 'category', 'brand',)
+    class Meta:
+        model = Product
+        
+class StockItemAdmin(admin.ModelAdmin):
+    list_display = ('product', 'price', 'inventory')
+    filter_horizontal = ('attributes',)
+
     class Meta:
         model = StockItem
 
@@ -51,20 +62,6 @@ class StockItemAttributeAdmin(admin.ModelAdmin):
 class StockItemAttributeValueAdmin(admin.ModelAdmin):
     class Meta:
         model = StockItemAttributeValue
-
-
-class ProductRelationshipInline(admin.TabularInline):
-    model = ProductRelationship
-    fk_name = 'from_product'
-
-class ProductAdmin(admin.ModelAdmin):
-    inlines = [
-        StockItemInline,
-        ProductRelationshipInline,
-    ]
-    list_display = ('title', 'category', 'brand',)
-    class Meta:
-        model = Product
 
 class PriceHistoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'price')
