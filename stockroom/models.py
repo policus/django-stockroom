@@ -34,13 +34,19 @@ class Product(models.Model):
     relationships = models.ManyToManyField('self', through='ProductRelationship', symmetrical=False, related_name='related_to')    
     created_on = models.DateTimeField(auto_now_add=True)
     last_updates = models.DateTimeField(auto_now=True)
+    thumbnail = models.ForeignKey('ProductImage', null=True, blank=True, related_name='product_thumbnails')
     
     def __unicode__(self):
-        return _(self.title)      
+        return _(self.title)
     
+    def attach_thumbnail(self, product_image, *args, **kwargs):
+        self.thumbnail = product_image
+        super(Product, self).save(*args, **kwargs) 
+
+import logging    
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', related_name='images')
-    attributes = models.ManyToManyField('StockItemAttributeValues', blank=True, null=True)
+    attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
     image_file = models.ImageField(upload_to='stockroom/products/%Y/%m/%d')
     caption = models.TextField(blank=True, null=True)
     
@@ -49,8 +55,12 @@ class ProductImage(models.Model):
         verbose_name_plural = 'images'
     
     def __unicode__(self):
-        return _("Image for %s" % self.product)
+        return _(self.image_file.url)
     
+    def save(self, *args, **kwargs):
+        super(ProductImage, self).save(*args, **kwargs)
+        if self.product.thumbnail is None:
+            self.product.attach_thumbnail(self)
 
 class ProductCategory(models.Model):
     active = models.BooleanField(default=True)
