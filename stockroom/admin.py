@@ -27,44 +27,51 @@ class StockItemInline(admin.StackedInline):
     extra = 0
     filter_horizontal = ('attributes',)
 
-class StockItemImageAdmin(admin.ModelAdmin):
+class ProductImageAdmin(admin.ModelAdmin):
     class Meta:
-        model = StockItemImage
+        model = ProductImage
 
-class StockItemImageInline(admin.TabularInline):
-    model = StockItemImage
+class ProductImageInline(admin.StackedInline):
+    model = ProductImage
     extra = 1
-    
-class StockItemAdmin(admin.ModelAdmin):
-    list_display = ('product', 'price', 'inventory', 'image_count')
     filter_horizontal = ('attributes',)
-    inlines = [
-        StockItemImageInline,
-    ]
-    class Meta:
-        model = StockItem
 
-class StockItemAttributeAdmin(admin.ModelAdmin):
+class ProductRelationshipInline(admin.TabularInline):
+    model = ProductRelationship
+    fk_name = 'from_product'
+    
+class ProductAdmin(admin.ModelAdmin):
+    inlines = [
+        StockItemInline,
+        ProductImageInline,
+    ]
+    list_display = ('title', 'category', 'brand',)
     class Meta:
-        model = StockItemAttribute
+        model = Product
 
 class StockItemAttributeValueAdmin(admin.ModelAdmin):
     class Meta:
         model = StockItemAttributeValue
 
+class StockItemAttributeValueInline(admin.TabularInline):
+    model = StockItemAttributeValue
 
-class ProductRelationshipInline(admin.TabularInline):
-    model = ProductRelationship
-    fk_name = 'from_product'
-
-class ProductAdmin(admin.ModelAdmin):
+class StockItemAttributeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
     inlines = [
-        StockItemInline,
-        ProductRelationshipInline,
+        StockItemAttributeValueInline,
     ]
-    list_display = ('title', 'category', 'brand',)
     class Meta:
-        model = Product
+        model = StockItemAttribute
+
+class StockItemAdmin(admin.ModelAdmin):
+    list_display = ('product', 'price', 'inventory')
+    filter_horizontal = ('attributes',)
+
+    class Meta:
+        model = StockItem
+
 
 class PriceHistoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'price')
@@ -88,7 +95,7 @@ admin.site.register(Cart, CartAdmin)
 admin.site.register(CartItem, CartItemAdmin)
 admin.site.register(PriceHistory, PriceHistoryAdmin)
 admin.site.register(Product, ProductAdmin)
+admin.site.register(ProductImage, ProductImageAdmin)
 admin.site.register(StockItem, StockItemAdmin)
 admin.site.register(StockItemAttribute, StockItemAttributeAdmin)
 admin.site.register(StockItemAttributeValue, StockItemAttributeValueAdmin)
-admin.site.register(StockItemImage, StockItemImageAdmin)
