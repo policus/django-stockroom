@@ -31,14 +31,15 @@ class ProductImageAdmin(admin.ModelAdmin):
     class Meta:
         model = ProductImage
 
-class ProductImageInline(admin.TabularInline):
+class ProductImageInline(admin.StackedInline):
     model = ProductImage
     extra = 1
+    filter_horizontal = ('attributes',)
 
 class ProductRelationshipInline(admin.TabularInline):
     model = ProductRelationship
     fk_name = 'from_product'
-
+    
 class ProductAdmin(admin.ModelAdmin):
     inlines = [
         StockItemInline,
@@ -47,7 +48,23 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = ('title', 'category', 'brand',)
     class Meta:
         model = Product
-        
+
+class StockItemAttributeValueAdmin(admin.ModelAdmin):
+    class Meta:
+        model = StockItemAttributeValue
+
+class StockItemAttributeValueInline(admin.TabularInline):
+    model = StockItemAttributeValue
+
+class StockItemAttributeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
+    inlines = [
+        StockItemAttributeValueInline,
+    ]
+    class Meta:
+        model = StockItemAttribute
+
 class StockItemAdmin(admin.ModelAdmin):
     list_display = ('product', 'price', 'inventory')
     filter_horizontal = ('attributes',)
@@ -55,13 +72,6 @@ class StockItemAdmin(admin.ModelAdmin):
     class Meta:
         model = StockItem
 
-class StockItemAttributeAdmin(admin.ModelAdmin):
-    class Meta:
-        model = StockItemAttribute
-
-class StockItemAttributeValueAdmin(admin.ModelAdmin):
-    class Meta:
-        model = StockItemAttributeValue
 
 class PriceHistoryAdmin(admin.ModelAdmin):
     list_display = ('__unicode__', 'price')

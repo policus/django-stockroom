@@ -43,7 +43,6 @@ class Product(models.Model):
         self.thumbnail = product_image
         super(Product, self).save(*args, **kwargs) 
 
-import logging    
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', related_name='images')
     attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
@@ -67,6 +66,8 @@ class ProductCategory(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(blank=True, unique=True)
     parent = models.ForeignKey('self', blank=True, null=True, related_name='children')
+    objects = models.Manager()
+    children = CategoryChildrenManager()
     
     class Meta:
         verbose_name = 'category'
@@ -134,8 +135,11 @@ class StockItemAttributeValue(models.Model):
     unit = models.CharField(max_length=8, choices=ATTRIBUTE_VALUE_UNITS, null=True, blank=True)
 
     def __unicode__(self):
-        return "%s : %s %s" % (self.attribute, self.value, self.unit)
-
+        if self.unit:
+            return "%s: %s %s" % (self.attribute, self.value, self.unit)
+        else:
+            return "%s: %s" % (self.attribute, self.value)
+            
     def display_value(self):
         return "%s %s" % (self.value, self.unit)
         
