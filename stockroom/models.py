@@ -167,6 +167,11 @@ class StockItem(models.Model):
         help_text='All prices in USD',
     )
     on_sale = models.BooleanField(default=False)
+    sale_price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        help_text='All prices in USD',
+    )
     
     class Meta:
         verbose_name = 'inventory'
@@ -174,6 +179,11 @@ class StockItem(models.Model):
     
     def __unicode__(self):
         return _("%s of %s" % (self.package_title, self.product))
+    
+    def get_price(self, on_sale=False):
+        if on_sale:
+            return self.sale_price
+        return self.price
         
     def save(self, *args, **kw):
        if self.pk is not None:
