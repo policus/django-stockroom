@@ -3,11 +3,9 @@ from django.contrib.localflavor.us.forms import USStateField
 from models import CartItem
 
 class CartItemForm(forms.Form):
-    color = forms.IntegerField(required=False)
-    measurement = forms.IntegerField(required=False)
     quantity = forms.IntegerField()
-    product = forms.IntegerField()
-
+    stock_item = forms.IntegerField()
+    
 class OrderForm(forms.Form):
     first_name = forms.CharField(max_length=80)
     last_name = forms.CharField(max_length=80)

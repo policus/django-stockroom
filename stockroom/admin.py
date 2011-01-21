@@ -33,7 +33,7 @@ class ProductImageAdmin(admin.ModelAdmin):
 
 class ProductImageInline(admin.StackedInline):
     model = ProductImage
-    extra = 1
+    extra = 0
     filter_horizontal = ('attributes',)
 
 class ProductRelationshipInline(admin.TabularInline):

@@ -42,7 +42,14 @@ class Product(models.Model):
     def attach_thumbnail(self, product_image, *args, **kwargs):
         self.thumbnail = product_image
         super(Product, self).save(*args, **kwargs) 
-
+    
+    def lowest_price(self):
+        try:
+            cheapest_stock_item = StockItem.objects.filter(product=self).order_by('price')[0]
+            return cheapest_stock_item.price
+        except StockItem.DoesNotExist:
+            return False
+    
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', related_name='images')
     attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
@@ -156,7 +163,7 @@ class StockItemAttributeValue(models.Model):
         return "%s %s" % (self.value, self.unit)
         
 class StockItem(models.Model):
-    product = models.ForeignKey('Product')
+    product = models.ForeignKey('Product', related_name='stock')
     attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
     package_title = models.CharField(max_length=60, blank=True, null=True, help_text='(ex. 3-pack of T-shirts)', default='Individual Item')
     package_count = models.IntegerField(default=1)
