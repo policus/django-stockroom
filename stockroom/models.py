@@ -178,6 +178,8 @@ class StockItem(models.Model):
         max_digits=10, 
         decimal_places=2, 
         help_text='All prices in USD',
+        blank=True,
+        null=True
     )
     
     class Meta:
