@@ -23,7 +23,7 @@ class Cart(object):
     def __iter__(self):
         for item in self.cart.cart_items.all():
             yield item
-
+    
     def new(self, request):
         cart = CartModel()
         cart.save()
