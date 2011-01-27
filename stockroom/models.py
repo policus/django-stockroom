@@ -19,7 +19,7 @@ class Manufacturer(models.Model):
 class Brand(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(null=True, blank=True)
-    manufacturer = models.ForeignKey('Manufacturer')
+    manufacturer = models.ForeignKey('Manufacturer', null=True, blank=True)
     logo = models.ImageField(upload_to='stockroom/brand_logos', null=True, blank=True)
     
     def __unicode__(self):
@@ -27,7 +27,7 @@ class Brand(models.Model):
     
 class Product(models.Model):
     category = models.ForeignKey('ProductCategory', null=True, blank=True)
-    brand = models.ForeignKey('Brand')
+    brand = models.ForeignKey('Brand', null=True, blank=True)
     title = models.CharField(max_length=120)
     description = models.TextField(blank=True, null=True)
     sku = models.CharField(max_length=30, null=True, blank=True, help_text='An internal unique identifier for this product')
