@@ -51,6 +51,7 @@ class ProductAdmin(admin.ModelAdmin):
         model = Product
 
 class StockItemAttributeValueAdmin(admin.ModelAdmin):
+    list_display = ('attribute', 'value',)
     class Meta:
         model = StockItemAttributeValue
 
