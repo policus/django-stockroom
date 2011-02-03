@@ -52,10 +52,10 @@ class Product(models.Model):
     
     def on_sale(self):
         try:
-            sale_item = StockItem.objects.filter(product=self, on_sale=True).order_by['sale_price'][0]
-            return sale_item.sale_price
-        except:
-            return False
+            sale_item = StockItem.objects.filter(product=self, on_sale=True).order_by('sale_price')
+        except StockItem.DoesNotExist:
+            sale_item = None
+        return sale_item
     
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', related_name='images')
