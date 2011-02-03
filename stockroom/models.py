@@ -53,7 +53,7 @@ class Product(models.Model):
     def on_sale(self):
         try:
             sale_item = StockItem.objects.filter(product=self, on_sale=True).order_by['sale_price'][0]
-            return sale_item
+            return sale_item.sale_price
         except:
             return False
     
