@@ -55,8 +55,15 @@ class Product(models.Model):
             sale_item = StockItem.objects.filter(product=self, on_sale=True).order_by('sale_price')
         except StockItem.DoesNotExist:
             sale_item = None
-        return sale_item
-    
+        
+        if len(sale_item) > 0:
+            return {
+                'regular_price': sale_item[0].price,
+                'sale_price': sale_item[0].sale_price,
+            }
+        else:
+            return False
+        
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', related_name='images')
     attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
