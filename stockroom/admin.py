@@ -47,6 +47,7 @@ class ProductAdmin(admin.ModelAdmin):
         ProductRelationshipInline,
     ]
     list_display = ('title', 'category', 'brand',)
+    list_filter = ('category', 'brand',)
     class Meta:
         model = Product
 
