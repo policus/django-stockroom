@@ -48,7 +48,7 @@ class ProductAdmin(admin.ModelAdmin):
     ]
     list_display = ('title', 'category', 'brand',)
     list_filter = ('category', 'brand',)
-    search_fields = ['sku', 'title']
+    search_fields = ['sku', 'title', 'stock_item__package_title']
     
     class Meta:
         model = Product
