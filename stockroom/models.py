@@ -26,6 +26,7 @@ class Brand(models.Model):
         return _(self.name)
     
 class Product(models.Model):
+    is_active = models.BooleanField(default=False)
     category = models.ForeignKey('ProductCategory', null=True, blank=True)
     brand = models.ForeignKey('Brand', null=True, blank=True)
     title = models.CharField(max_length=120)
@@ -45,8 +46,20 @@ class Product(models.Model):
     
     def lowest_price(self):
         try:
-            cheapest_stock_item = StockItem.objects.filter(product=self).order_by('price')[0]
-            return cheapest_stock_item.price
+            stock_items = StockItem.objects.filter(product=self).order_by('price')
+            
+            lowest_price = None
+            for i in stock_items:
+                if i.on_sale:
+                    if lowest_price == None or 0.00 < i.sale_price < lowest_price:
+                        lowest_price = i.sale_price
+                else:
+                    if lowest_price == None or 0.00 < i.price < lowest_price:
+                        if float(i.price) != 0.00:
+                            lowest_price = i.price
+            
+            return lowest_price
+            
         except StockItem.DoesNotExist:
             return False
     
@@ -63,7 +76,7 @@ class Product(models.Model):
             }
         else:
             return False
-        
+            
 class ProductImage(models.Model):
     product = models.ForeignKey('Product', related_name='images')
     attributes = models.ManyToManyField('StockItemAttributeValue', blank=True, null=True)
@@ -129,9 +142,9 @@ class ProductCategory(models.Model):
         # http://docs.python.org/reference/datamodel.html#object.__repr__
         return self.get_separator().join(parent_list).encode("ascii", "replace")
 
-    def save(self, force_insert=False, force_update=False):
-        self.slug = slugify(self.name)
-        super(ProductCategory, self).save()
+    # def save(self, force_insert=False, force_update=False):
+    #     self.slug = slugify(self.name)
+    #     super(ProductCategory, self).save()
                 
 
 class ProductRelationship(models.Model):
@@ -209,15 +222,19 @@ class StockItem(models.Model):
         return self.price
         
     def save(self, *args, **kw):
-       if self.pk is not None:
-           original = StockItem.objects.get(pk=self.pk)
-           if original.price != self.price:
-               PriceHistory.objects.create(
-                   stock_item=self,
-                   price=self.price,
-                   on_sale=self.on_sale,
-               )
-       super(StockItem, self).save(*args, **kw)
+        if self.pk is not None:
+            original = StockItem.objects.get(pk=self.pk)
+            if original.price != self.price:
+                PriceHistory.objects.create(
+                    stock_item=self,
+                    price=self.price,
+                    on_sale=self.on_sale,
+                )
+            
+            # Set product to active as long as they're something in stock
+            # Probably inefficient as hell
+
+        super(StockItem, self).save(*args, **kw)
     
 class PriceHistory(models.Model):
     stock_item = models.ForeignKey('StockItem')
@@ -260,3 +277,30 @@ class CartItem(models.Model):
     
     def subtotal(self):
         return self.quantity * self.stock_item.get_price()
+
+
+# Listen to signals
+from django.db.models.signals import post_save
+
+def activate_product(sender, **kwargs):
+    product = kwargs['instance'].product
+
+    try:
+        product_stock = StockItem.objects.filter(product=product, inventory__gt=0)
+    except StockItem.DoesNotExist:
+        product_stock = None
+    
+    if product_stock == None and product.is_active == True:
+        product.is_active = False
+        product.save()
+            
+    if product_stock and product.is_active == False:
+        product.is_active = True
+        product.save()
+    
+    if product.is_active:
+        return True
+    else:
+        return False
+
+post_save.connect(activate_product, sender=StockItem)
