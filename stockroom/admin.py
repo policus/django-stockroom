@@ -47,7 +47,7 @@ class ProductAdmin(admin.ModelAdmin):
         ProductImageInline,
         ProductRelationshipInline,
     ]
-    list_display = ('title', 'category', 'brand',)
+    list_display = ('title', 'category', 'brand', 'in_stock', 'has_image')
     list_filter = ('category', 'brand',)
     search_fields = ['sku', 'title', 'stock__package_title']
     

@@ -43,6 +43,23 @@ class Product(models.Model):
     def attach_thumbnail(self, product_image, *args, **kwargs):
         self.thumbnail = product_image
         super(Product, self).save(*args, **kwargs) 
+
+    
+    def in_stock(obj):
+        stock = StockItem.objects.filter(product=obj, inventory__gt=0, price__gt=0)
+        if stock:
+            return True
+        else:
+            return False
+    in_stock.short_description = 'In Stock'
+    
+    def has_image(obj):
+        images = ProductImage.objects.filter(product=obj)
+        if images:
+            return True
+        else:
+            return False
+    has_image.short_description = 'Has Image'
     
     def lowest_price(self):
         try:
@@ -220,7 +237,7 @@ class StockItem(models.Model):
         if on_sale:
             return self.sale_price
         return self.price
-        
+    
     def save(self, *args, **kw):
         if self.pk is not None:
             original = StockItem.objects.get(pk=self.pk)
@@ -248,7 +265,7 @@ class PriceHistory(models.Model):
         verbose_name_plural = 'price history'
     
     def __unicode__(self):
-        return self.price
+        return str(self.price)
         
 class Cart(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
